@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>品质看板系统</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
@@ -44,6 +47,17 @@
         }
 
         .header-right { display: flex; align-items: center; gap: 10px; }
+
+        .db-status {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .db-status.connected { background: rgba(74,222,128,0.2); color: #4ade80; }
+        .db-status.disconnected { background: rgba(248,113,113,0.2); color: #f87171; }
+        .db-status.loading { background: rgba(251,191,36,0.2); color: #fbbf24; }
 
         .date-picker {
             padding: 6px 10px;
@@ -139,7 +153,7 @@
         .kpi.c5 .value { color: #a78bfa; }
         .kpi.c6 .value { color: #fb923c; }
 
-        /* Charts area - fills remaining space */
+        /* Charts area */
         .charts-area {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -201,7 +215,7 @@
         .rank-name { flex: 1; color: #ffffff; }
         .rank-val { color: #f87171; font-weight: 700; }
 
-        /* Scroll hint - fixed floating */
+        /* Scroll hint */
         .scroll-hint {
             position: fixed;
             bottom: 12px;
@@ -211,10 +225,7 @@
             transition: opacity 0.3s, visibility 0.3s;
         }
 
-        .scroll-hint.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
+        .scroll-hint.hidden { opacity: 0; visibility: hidden; }
 
         .scroll-hint span {
             font-size: 11px;
@@ -358,6 +369,7 @@
         <div class="header">
             <h1>品质看板系统</h1>
             <div class="header-right">
+                <span class="db-status loading" id="dbStatus">连接中...</span>
                 <input type="date" class="date-picker" id="datePicker">
                 <button class="btn btn-primary" onclick="openModal()">+ 录入</button>
             </div>
@@ -372,12 +384,12 @@
             <!-- 来料品质 -->
             <div class="page active" id="page-incoming">
                 <div class="kpi-row">
-                    <div class="kpi c1"><div class="label">今日批次</div><div class="value" id="kpi-i-total">12</div><div class="sub">来料总数</div></div>
-                    <div class="kpi c2"><div class="label">合格批次</div><div class="value" id="kpi-i-pass">9</div><div class="sub">合格率 75%</div></div>
-                    <div class="kpi c3"><div class="label">不良批次</div><div class="value" id="kpi-i-ng">3</div><div class="sub">较昨日 +1</div></div>
-                    <div class="kpi c4"><div class="label">不良率</div><div class="value" id="kpi-i-rate">2.8%</div><div class="sub">目标 ≤2%</div></div>
-                    <div class="kpi c5"><div class="label">待处理</div><div class="value" id="kpi-i-pending">5</div><div class="sub">需跟进</div></div>
-                    <div class="kpi c6"><div class="label">供应商</div><div class="value" id="kpi-i-supplier">8</div><div class="sub">活跃中</div></div>
+                    <div class="kpi c1"><div class="label">今日批次</div><div class="value" id="kpi-i-total">-</div><div class="sub">来料总数</div></div>
+                    <div class="kpi c2"><div class="label">合格批次</div><div class="value" id="kpi-i-pass">-</div><div class="sub">合格率</div></div>
+                    <div class="kpi c3"><div class="label">不良批次</div><div class="value" id="kpi-i-ng">-</div><div class="sub">不良数</div></div>
+                    <div class="kpi c4"><div class="label">不良率</div><div class="value" id="kpi-i-rate">-</div><div class="sub">目标 ≤2%</div></div>
+                    <div class="kpi c5"><div class="label">待处理</div><div class="value" id="kpi-i-pending">-</div><div class="sub">需跟进</div></div>
+                    <div class="kpi c6"><div class="label">供应商</div><div class="value" id="kpi-i-supplier">-</div><div class="sub">活跃中</div></div>
                 </div>
 
                 <div class="charts-area">
@@ -438,12 +450,12 @@
             <!-- 过程品质 -->
             <div class="page" id="page-process">
                 <div class="kpi-row">
-                    <div class="kpi c1"><div class="label">今日产量</div><div class="value" id="kpi-p-output">2880</div><div class="sub">达成率 96%</div></div>
-                    <div class="kpi c3"><div class="label">不良数</div><div class="value" id="kpi-p-ng">23</div><div class="sub">较昨日 +5</div></div>
-                    <div class="kpi c4"><div class="label">不良率</div><div class="value" id="kpi-p-rate">0.8%</div><div class="sub">目标 ≤0.5%</div></div>
-                    <div class="kpi c2"><div class="label">合格率</div><div class="value" id="kpi-p-pass">99.2%</div><div class="sub">较上周 +0.1%</div></div>
-                    <div class="kpi c5"><div class="label">高频原因</div><div class="value" id="kpi-p-top">混料</div><div class="sub">占比 35%</div></div>
-                    <div class="kpi c6"><div class="label">待处理</div><div class="value" id="kpi-p-pending">7</div><div class="sub">需跟进</div></div>
+                    <div class="kpi c1"><div class="label">今日产量</div><div class="value" id="kpi-p-output">-</div><div class="sub">达成率</div></div>
+                    <div class="kpi c3"><div class="label">不良数</div><div class="value" id="kpi-p-ng">-</div><div class="sub">不良总数</div></div>
+                    <div class="kpi c4"><div class="label">不良率</div><div class="value" id="kpi-p-rate">-</div><div class="sub">目标 ≤0.5%</div></div>
+                    <div class="kpi c2"><div class="label">合格率</div><div class="value" id="kpi-p-pass">-</div><div class="sub">合格率</div></div>
+                    <div class="kpi c5"><div class="label">高频原因</div><div class="value" id="kpi-p-top">-</div><div class="sub">占比最高</div></div>
+                    <div class="kpi c6"><div class="label">待处理</div><div class="value" id="kpi-p-pending">-</div><div class="sub">需跟进</div></div>
                 </div>
 
                 <div class="charts-area">
@@ -516,43 +528,87 @@
     </div>
 
     <script>
-        // Data Store
-        const Store = {
-            get(key, def = []) { try { return JSON.parse(localStorage.getItem('qms_' + key)) || def; } catch { return def; } },
-            set(key, val) { localStorage.setItem('qms_' + key, JSON.stringify(val)); }
+        // ===== Firebase Init =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyABPBcFcN126fepHaTIdb9S9TWmyZY_JI4",
+            authDomain: "qms-board.firebaseapp.com",
+            projectId: "qms-board",
+            storageBucket: "qms-board.firebasestorage.app",
+            messagingSenderId: "37596730882",
+            appId: "1:37596730882:web:1771e64238a3527116791b"
         };
 
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Data
         let currentTab = 'incoming';
         let currentDate = new Date().toISOString().split('T')[0];
-        let incomingData = Store.get('incoming', []);
-        let processData = Store.get('process', []);
+        let incomingData = [];
+        let processData = [];
+        let dbConnected = false;
 
-        // Sample data
-        if (incomingData.length === 0) {
-            incomingData = [
-                { id: 1, date: currentDate, supplier: 'Anhui Meizhi', product: 'Rotor', model: 'BK13504861', reason: '通止规NG', qty: 2640, ngQty: 2, status: 'processing' },
-                { id: 2, date: currentDate, supplier: 'Shenzhen Parts', product: 'Stator', model: 'BK19603830', reason: '外观划痕', qty: 500, ngQty: 8, status: 'pending' },
-                { id: 3, date: currentDate, supplier: 'Guangzhou Mat.', product: 'Cover', model: 'BK20501234', reason: '尺寸超差', qty: 1000, ngQty: 15, status: 'resolved' },
-                { id: 4, date: '2026-08-26', supplier: 'Anhui Meizhi', product: 'Shaft', model: 'BK13504862', reason: '粗糙度NG', qty: 3000, ngQty: 45, status: 'processing' },
-                { id: 5, date: '2026-08-25', supplier: 'Dongguan Steel', product: 'Plate', model: 'BK30100001', reason: '硬度不足', qty: 200, ngQty: 5, status: 'resolved' },
-            ];
-            Store.set('incoming', incomingData);
+        // UI Elements
+        const dbStatusEl = document.getElementById('dbStatus');
+
+        function setDbStatus(status, text) {
+            dbStatusEl.className = 'db-status ' + status;
+            dbStatusEl.textContent = text;
         }
 
-        if (processData.length === 0) {
-            processData = [
-                { id: 1, date: currentDate, time: '15:50', line: 'B', model: 'PZ65E1B', partNo: 'BK19603830', reason: '混料', qty: 288, ngQty: 1, output: 2880, status: 'processing' },
-                { id: 2, date: currentDate, time: '14:20', line: 'A', model: 'PZ65E2A', partNo: 'BK13504861', reason: '装配松动', qty: 500, ngQty: 3, output: 2880, status: 'pending' },
-                { id: 3, date: currentDate, time: '11:30', line: 'C', model: 'PZ70E3B', partNo: 'BK20501234', reason: '外观划伤', qty: 350, ngQty: 5, output: 2800, status: 'resolved' },
-                { id: 4, date: '2026-08-26', time: '09:45', line: 'B', model: 'PZ65E1B', partNo: 'BK30100001', reason: '异音', qty: 200, ngQty: 2, output: 2800, status: 'resolved' },
-                { id: 5, date: '2026-08-25', time: '16:10', line: 'D', model: 'PZ80E4C', partNo: 'BK40200015', reason: '电气不良', qty: 450, ngQty: 4, output: 2750, status: 'resolved' },
-            ];
-            Store.set('process', processData);
+        // ===== Firestore Real-time Listeners =====
+        function initFirestore() {
+            // Listen to incoming data
+            db.collection('incoming').onSnapshot(snapshot => {
+                incomingData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                dbConnected = true;
+                setDbStatus('connected', '已连接');
+                refreshAll();
+            }, error => {
+                console.error('Incoming listener error:', error);
+                setDbStatus('disconnected', '连接失败');
+                dbConnected = false;
+            });
+
+            // Listen to process data
+            db.collection('process').onSnapshot(snapshot => {
+                processData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                refreshAll();
+            }, error => {
+                console.error('Process listener error:', error);
+            });
         }
 
-        // Init
+        // ===== CRUD Operations =====
+        async function addRecord(type, data) {
+            try {
+                const docRef = await db.collection(type).add({
+                    ...data,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return docRef.id;
+            } catch (e) {
+                console.error('Add error:', e);
+                return null;
+            }
+        }
+
+        async function updateRecordStatus(type, id, status) {
+            try {
+                await db.collection(type).doc(id).update({ status });
+                return true;
+            } catch (e) {
+                console.error('Update error:', e);
+                return false;
+            }
+        }
+
+        // ===== Init =====
         document.getElementById('datePicker').value = currentDate;
-        document.getElementById('datePicker').addEventListener('change', (e) => { currentDate = e.target.value; refreshAll(); });
+        document.getElementById('datePicker').addEventListener('change', (e) => {
+            currentDate = e.target.value;
+            refreshAll();
+        });
 
         // Tabs
         document.querySelectorAll('.tab').forEach(tab => {
@@ -563,21 +619,17 @@
                 currentTab = tab.dataset.tab;
                 document.getElementById('page-' + currentTab).classList.add('active');
                 document.getElementById('page-' + currentTab).scrollTop = 0;
-                // Show hint again
                 document.querySelectorAll('.scroll-hint').forEach(h => h.classList.remove('hidden'));
             });
         });
 
-        // Scroll hint visibility
+        // Scroll hint
         document.querySelectorAll('.page').forEach(page => {
             page.addEventListener('scroll', function() {
                 const hint = this.querySelector('.scroll-hint');
                 if (hint) {
-                    if (this.scrollTop > 100) {
-                        hint.classList.add('hidden');
-                    } else {
-                        hint.classList.remove('hidden');
-                    }
+                    if (this.scrollTop > 100) hint.classList.add('hidden');
+                    else hint.classList.remove('hidden');
                 }
             });
         });
@@ -588,8 +640,8 @@
             const ng = td.filter(d => d.ngQty > 0);
             const pend = td.filter(d => d.status !== 'resolved');
             const sups = [...new Set(td.map(d => d.supplier))];
-            const totalQty = td.reduce((s, d) => s + d.qty, 0);
-            const totalNg = td.reduce((s, d) => s + d.ngQty, 0);
+            const totalQty = td.reduce((s, d) => s + (d.qty || 0), 0);
+            const totalNg = td.reduce((s, d) => s + (d.ngQty || 0), 0);
             const rate = totalQty > 0 ? (totalNg / totalQty * 100).toFixed(1) : 0;
 
             document.getElementById('kpi-i-total').textContent = td.length;
@@ -601,11 +653,11 @@
 
             const pt = processData.filter(d => d.date === currentDate);
             const po = pt.length > 0 ? pt[0].output || 0 : 0;
-            const png = pt.reduce((s, d) => s + d.ngQty, 0);
+            const png = pt.reduce((s, d) => s + (d.ngQty || 0), 0);
             const pr = po > 0 ? (png / po * 100).toFixed(2) : 0;
             const pp = pt.filter(d => d.status !== 'resolved');
             const rc = {};
-            pt.forEach(d => { rc[d.reason] = (rc[d.reason] || 0) + d.ngQty; });
+            pt.forEach(d => { rc[d.reason] = (rc[d.reason] || 0) + (d.ngQty || 0); });
             const top = Object.entries(rc).sort((a, b) => b[1] - a[1])[0];
 
             document.getElementById('kpi-p-output').textContent = po.toLocaleString();
@@ -622,21 +674,24 @@
             document.getElementById('i-tbody').innerHTML = iData.map(d => {
                 const r = d.qty > 0 ? (d.ngQty / d.qty * 100).toFixed(2) : 0;
                 const c = r > 1.5 ? 'ng-h' : r > 0.5 ? 'ng-m' : 'ng-l';
-                return `<tr><td>${d.supplier}</td><td>${d.product}</td><td>${d.model}</td><td>${d.reason}</td><td>${d.qty}(${d.ngQty})</td><td class="${c}">${r}%</td><td><select class="status-select" onchange="updateStatus('incoming',${d.id},this.value)"><option value="pending"${d.status==='pending'?' selected':''}>待处理</option><option value="processing"${d.status==='processing'?' selected':''}>处理中</option><option value="resolved"${d.status==='resolved'?' selected':''}>已闭环</option></select></td></tr>`;
+                return `<tr><td>${d.supplier||''}</td><td>${d.product||''}</td><td>${d.model||''}</td><td>${d.reason||''}</td><td>${d.qty||0}(${d.ngQty||0})</td><td class="${c}">${r}%</td><td><select class="status-select" onchange="updateStatus('incoming','${d.id}',this.value)"><option value="pending"${d.status==='pending'?' selected':''}>待处理</option><option value="processing"${d.status==='processing'?' selected':''}>处理中</option><option value="resolved"${d.status==='resolved'?' selected':''}>已闭环</option></select></td></tr>`;
             }).join('');
 
             const pData = processData.filter(d => d.date === currentDate);
             document.getElementById('p-tbody').innerHTML = pData.map(d => {
                 const r = d.qty > 0 ? (d.ngQty / d.qty * 100).toFixed(2) : 0;
                 const c = r > 1.0 ? 'ng-h' : r > 0.5 ? 'ng-m' : 'ng-l';
-                return `<tr><td>${d.time||'-'}</td><td><span class="badge badge-info">${d.line}</span></td><td>${d.model}</td><td>${d.partNo}</td><td>${d.reason}</td><td>${d.qty}(${d.ngQty})</td><td class="${c}">${r}%</td><td><select class="status-select" onchange="updateStatus('process',${d.id},this.value)"><option value="pending"${d.status==='pending'?' selected':''}>待处理</option><option value="processing"${d.status==='processing'?' selected':''}>处理中</option><option value="resolved"${d.status==='resolved'?' selected':''}>已闭环</option></select></td></tr>`;
+                return `<tr><td>${d.time||'-'}</td><td><span class="badge badge-info">${d.line||''}</span></td><td>${d.model||''}</td><td>${d.partNo||''}</td><td>${d.reason||''}</td><td>${d.qty||0}(${d.ngQty||0})</td><td class="${c}">${r}%</td><td><select class="status-select" onchange="updateStatus('process','${d.id}',this.value)"><option value="pending"${d.status==='pending'?' selected':''}>待处理</option><option value="processing"${d.status==='processing'?' selected':''}>处理中</option><option value="resolved"${d.status==='resolved'?' selected':''}>已闭环</option></select></td></tr>`;
             }).join('');
         }
 
-        function updateStatus(type, id, status) {
-            const data = type === 'incoming' ? incomingData : processData;
-            const item = data.find(d => d.id === id);
-            if (item) { item.status = status; Store.set(type, data); updateKPI(); renderTables(); }
+        async function updateStatus(type, id, status) {
+            const success = await updateRecordStatus(type, id, status);
+            if (success) {
+                // Data will auto-update via listener
+            } else {
+                alert('更新失败，请检查网络连接');
+            }
         }
 
         // Ranking
@@ -654,20 +709,20 @@
         Chart.defaults.font.weight = '600';
 
         const co = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
-        const sc = (c, w) => ({ [c]: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#fff' } }, ...(w ? {} : { x: { grid: { display: false }, ticks: { color: '#fff' } } }) });
 
         function initCharts() {
+            // Static demo charts (will be updated with real data later)
             new Chart('ic1', { type: 'line', data: { labels: Array.from({length:14},(_,i)=>(i+1)+''), datasets: [{ data: [1.2,1.8,1.5,2.1,1.9,2.5,2.2,1.8,2.0,1.6,1.4,1.7,2.3,2.8], borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 },{ data: Array(14).fill(2), borderColor: '#f87171', borderDash: [3,3], pointRadius: 0, borderWidth: 1 }] }, options: co });
             new Chart('ic2', { type: 'doughnut', data: { labels: ['通止规','外观','尺寸','材质','其他'], datasets: [{ data: [25,20,18,15,10], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#555'], borderWidth: 0 }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } } }, cutout: '55%' });
-            new Chart('ic3', { type: 'bar', data: { labels: ['Meizhi','Parts','Mat.','Steel','Elec.'], datasets: [{ data: [2.5,1.8,1.6,1.2,0.9], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderRadius: 3, barPercentage: 0.5 }] }, options: { ...co, indexAxis: 'y', scales: sc('x', true) } });
-            new Chart('ic4', { type: 'line', data: { labels: ['W1','W2','W3','W4'], datasets: [{ data: [97.5,98.2,97.8,97.2], borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2 }] }, options: { ...co, scales: { y: { min: 95, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#fff' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
-            new Chart('ic5', { type: 'bar', data: { labels: ['21','22','23','24','25','26','27'], datasets: [{ data: [10,12,11,13,10,11,9], backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 2, barPercentage: 0.6 },{ data: [1,2,1,2,2,2,3], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 2, barPercentage: 0.6 }] }, options: { ...co, scales: { y: { beginAtZero: true, stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#fff' } }, x: { stacked: true, grid: { display: false }, ticks: { color: '#fff' } } } } });
-            new Chart('ic6', { type: 'polarArea', data: { labels: ['尺寸','外观','通止','材质','绝缘'], datasets: [{ data: [28,22,18,12,8], backgroundColor: ['rgba(0,212,255,0.6)','rgba(251,191,36,0.6)','rgba(248,113,113,0.6)','rgba(167,139,250,0.6)','rgba(74,222,128,0.6)'] }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } }, scales: { r: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false } } } } });
+            new Chart('ic3', { type: 'bar', data: { labels: ['Meizhi','Parts','Mat.','Steel','Elec.'], datasets: [{ data: [2.5,1.8,1.6,1.2,0.9], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderRadius: 3, barPercentage: 0.5 }] }, options: { ...co, indexAxis: 'y' } });
+            new Chart('ic4', { type: 'line', data: { labels: ['W1','W2','W3','W4'], datasets: [{ data: [97.5,98.2,97.8,97.2], borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2 }] }, options: { ...co, scales: { y: { min: 95, max: 100 }, x: { grid: { display: false } } } } });
+            new Chart('ic5', { type: 'bar', data: { labels: ['21','22','23','24','25','26','27'], datasets: [{ data: [10,12,11,13,10,11,9], backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 2, barPercentage: 0.6 },{ data: [1,2,1,2,2,2,3], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 2, barPercentage: 0.6 }] }, options: { ...co, scales: { y: { beginAtZero: true, stacked: true }, x: { stacked: true, grid: { display: false } } } } });
+            new Chart('ic6', { type: 'polarArea', data: { labels: ['尺寸','外观','通止','材质','绝缘'], datasets: [{ data: [28,22,18,12,8], backgroundColor: ['rgba(0,212,255,0.6)','rgba(251,191,36,0.6)','rgba(248,113,113,0.6)','rgba(167,139,250,0.6)','rgba(74,222,128,0.6)'] }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } } } });
 
-            new Chart('pc1', { type: 'line', data: { labels: ['21','22','23','24','25','26','27'], datasets: [{ data: [8,12,10,15,11,13,23], borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },{ data: [0.4,0.6,0.5,0.7,0.5,0.6,0.8], borderColor: '#fbbf24', tension: 0.4, pointRadius: 3, borderWidth: 2, yAxisID: 'y1' }] }, options: { ...co, scales: { y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#fff' } }, y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { color: '#fff' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
+            new Chart('pc1', { type: 'line', data: { labels: ['21','22','23','24','25','26','27'], datasets: [{ data: [8,12,10,15,11,13,23], borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },{ data: [0.4,0.6,0.5,0.7,0.5,0.6,0.8], borderColor: '#fbbf24', tension: 0.4, pointRadius: 3, borderWidth: 2, yAxisID: 'y1' }] }, options: { ...co, scales: { y: { beginAtZero: true, position: 'left' }, y1: { beginAtZero: true, position: 'right', grid: { display: false } }, x: { grid: { display: false } } } } });
             new Chart('pc2', { type: 'bar', data: { labels: ['混料','外观','装配','尺寸','电气'], datasets: [{ data: [31,22,18,15,12], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 3, barPercentage: 0.5 }] }, options: co });
             new Chart('pc3', { type: 'bar', data: { labels: ['A','B','C','D'], datasets: [{ data: [18,25,22,14], backgroundColor: ['#00d4ff','#a78bfa','#fbbf24','#4ade80'], borderRadius: 3, barPercentage: 0.5 }] }, options: co });
-            new Chart('pc4', { type: 'radar', data: { labels: ['A','B','C','D'], datasets: [{ data: [0.7,0.9,0.8,0.5], borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.15)', pointBackgroundColor: '#00d4ff', pointRadius: 3 }] }, options: { ...co, scales: { r: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, angleLines: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false }, pointLabels: { color: '#fff', font: { size: 11, weight: '600' } } } } } });
+            new Chart('pc4', { type: 'radar', data: { labels: ['A','B','C','D'], datasets: [{ data: [0.7,0.9,0.8,0.5], borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.15)', pointBackgroundColor: '#00d4ff', pointRadius: 3 }] }, options: { ...co, scales: { r: { beginAtZero: true, ticks: { display: false }, pointLabels: { color: '#fff', font: { size: 11, weight: '600' } } } } } });
             new Chart('pc5', { type: 'doughnut', data: { labels: ['8-10','10-12','13-15','15-17'], datasets: [{ data: [12,18,25,22], backgroundColor: ['#4ade80','#00d4ff','#fbbf24','#f87171'], borderWidth: 0 }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } } }, cutout: '50%' });
             new Chart('pc6', { type: 'bar', data: { labels: ['21','22','23','24','25','26','27'], datasets: [{ data: [8,12,10,15,11,13,23], backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 3, barPercentage: 0.5 }] }, options: co });
             new Chart('pc7', { type: 'doughnut', data: { labels: ['混料','外观','装配','尺寸','电气'], datasets: [{ data: [31,22,18,15,12], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderWidth: 0 }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } } }, cutout: '55%' });
@@ -693,18 +748,40 @@
 
         function closeModal() { document.getElementById('modal').classList.remove('show'); }
 
-        function saveRecord() {
+        async function saveRecord() {
             const isI = currentTab === 'incoming';
-            const id = Date.now();
+            const data = { date: currentDate };
+            
             if (isI) {
-                incomingData.unshift({ id, date: currentDate, supplier: document.getElementById('f-supplier').value, product: document.getElementById('f-product').value, model: document.getElementById('f-model').value, reason: document.getElementById('f-reason').value, qty: +document.getElementById('f-qty').value||0, ngQty: +document.getElementById('f-ngQty').value||0, status: 'pending' });
-                Store.set('incoming', incomingData);
+                data.supplier = document.getElementById('f-supplier').value;
+                data.product = document.getElementById('f-product').value;
+                data.model = document.getElementById('f-model').value;
+                data.invoice = document.getElementById('f-invoice').value;
+                data.qty = +document.getElementById('f-qty').value || 0;
+                data.ngQty = +document.getElementById('f-ngQty').value || 0;
+                data.reason = document.getElementById('f-reason').value;
+                data.status = 'pending';
             } else {
-                const out = +document.getElementById('f-output').value||0;
-                processData.unshift({ id, date: currentDate, time: document.getElementById('f-time').value, line: document.getElementById('f-line').value, model: document.getElementById('f-model').value, partNo: document.getElementById('f-partNo').value, reason: document.getElementById('f-reason').value, qty: out, ngQty: +document.getElementById('f-ngQty').value||0, output: out, status: 'pending' });
-                Store.set('process', processData);
+                data.time = document.getElementById('f-time').value;
+                data.line = document.getElementById('f-line').value;
+                data.model = document.getElementById('f-model').value;
+                data.partNo = document.getElementById('f-partNo').value;
+                data.output = +document.getElementById('f-output').value || 0;
+                data.qty = data.output;
+                data.ngQty = +document.getElementById('f-ngQty').value || 0;
+                data.reason = document.getElementById('f-reason').value;
+                data.status = 'pending';
             }
-            closeModal(); refreshAll();
+
+            const type = isI ? 'incoming' : 'process';
+            const id = await addRecord(type, data);
+            
+            if (id) {
+                closeModal();
+                // Data will auto-update via listener
+            } else {
+                alert('保存失败，请检查网络连接');
+            }
         }
 
         // Filters
@@ -729,15 +806,17 @@
             const tbody = document.getElementById(type === 'incoming' ? 'i-tbody' : 'p-tbody');
             tbody.innerHTML = data.map(d => {
                 const r = d.qty > 0 ? (d.ngQty / d.qty * 100).toFixed(2) : 0;
-                const c = r > (type === 'incoming' ? 0.5 : 0.5) ? (r > 1.5 ? 'ng-h' : 'ng-m') : 'ng-l';
-                if (type === 'incoming') return `<tr><td>${d.supplier}</td><td>${d.product}</td><td>${d.model}</td><td>${d.reason}</td><td>${d.qty}(${d.ngQty})</td><td class="${c}">${r}%</td><td><select class="status-select" onchange="updateStatus('incoming',${d.id},this.value)"><option value="pending"${d.status==='pending'?' selected':''}>待处理</option><option value="processing"${d.status==='processing'?' selected':''}>处理中</option><option value="resolved"${d.status==='resolved'?' selected':''}>已闭环</option></select></td></tr>`;
-                else return `<tr><td>${d.time||'-'}</td><td><span class="badge badge-info">${d.line}</span></td><td>${d.model}</td><td>${d.partNo}</td><td>${d.reason}</td><td>${d.qty}(${d.ngQty})</td><td class="${c}">${r}%</td><td><select class="status-select" onchange="updateStatus('process',${d.id},this.value)"><option value="pending"${d.status==='pending'?' selected':''}>待处理</option><option value="processing"${d.status==='processing'?' selected':''}>处理中</option><option value="resolved"${d.status==='resolved'?' selected':''}>已闭环</option></select></td></tr>`;
+                const c = r > 0.5 ? (r > 1.5 ? 'ng-h' : 'ng-m') : 'ng-l';
+                if (type === 'incoming') return `<tr><td>${d.supplier||''}</td><td>${d.product||''}</td><td>${d.model||''}</td><td>${d.reason||''}</td><td>${d.qty||0}(${d.ngQty||0})</td><td class="${c}">${r}%</td><td><select class="status-select" onchange="updateStatus('incoming','${d.id}',this.value)"><option value="pending"${d.status==='pending'?' selected':''}>待处理</option><option value="processing"${d.status==='processing'?' selected':''}>处理中</option><option value="resolved"${d.status==='resolved'?' selected':''}>已闭环</option></select></td></tr>`;
+                else return `<tr><td>${d.time||'-'}</td><td><span class="badge badge-info">${d.line||''}</span></td><td>${d.model||''}</td><td>${d.partNo||''}</td><td>${d.reason||''}</td><td>${d.qty||0}(${d.ngQty||0})</td><td class="${c}">${r}%</td><td><select class="status-select" onchange="updateStatus('process','${d.id}',this.value)"><option value="pending"${d.status==='pending'?' selected':''}>待处理</option><option value="processing"${d.status==='processing'?' selected':''}>处理中</option><option value="resolved"${d.status==='resolved'?' selected':''}>已闭环</option></select></td></tr>`;
             }).join('');
         }
 
         function refreshAll() { updateKPI(); renderTables(); renderRanking(); }
+
+        // Start
         initCharts();
-        refreshAll();
+        initFirestore();
     </script>
 </body>
 </html>
