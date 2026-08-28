@@ -7,23 +7,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
-
+        html, body { height: 100%; overflow: hidden; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
-            color: #e4e4e4;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
         }
 
-        .container {
+        .app {
             height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 10px 16px;
+            padding: 8px 12px;
+            gap: 8px;
         }
 
         /* Header */
@@ -31,45 +27,83 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
-            margin-bottom: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.06);
             flex-shrink: 0;
         }
 
         .header h1 {
-            font-size: 20px;
-            font-weight: 700;
-            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .header .datetime { font-size: 12px; color: #666; }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .date-picker {
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #ccc;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .date-picker:focus { border-color: #00d4ff; }
+
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            color: #fff;
+        }
+
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #aaa;
+        }
+
+        .btn-ghost:hover { border-color: #00d4ff; color: #00d4ff; }
 
         /* Tabs */
         .tabs {
             display: flex;
-            gap: 6px;
-            margin-bottom: 8px;
+            gap: 4px;
             flex-shrink: 0;
         }
 
         .tab {
-            padding: 8px 20px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
+            padding: 8px 18px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
-            font-weight: 500;
-            transition: all 0.3s;
-            color: #888;
+            color: #777;
+            transition: all 0.2s;
         }
 
-        .tab:hover { background: rgba(255, 255, 255, 0.08); color: #ccc; }
+        .tab:hover { color: #bbb; }
 
         .tab.active {
             background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
@@ -77,219 +111,223 @@
             border-color: transparent;
         }
 
-        /* Page content */
-        .page-content {
-            display: none;
+        /* Main content */
+        .main {
             flex: 1;
-            overflow: hidden;
-        }
-
-        .page-content.active {
             display: flex;
             flex-direction: column;
-        }
-
-        .scroll-wrapper {
-            flex: 1;
-            overflow-y: auto;
-            scroll-behavior: smooth;
-        }
-
-        .scroll-wrapper::-webkit-scrollbar { width: 4px; }
-        .scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
-        .scroll-wrapper::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.3); border-radius: 2px; }
-
-        /* KPI Row - Compact */
-        .kpi-row {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .kpi-card {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            padding: 10px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            text-align: center;
-        }
-
-        .kpi-card .label {
-            font-size: 10px;
-            color: #666;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .kpi-card .value {
-            font-size: 22px;
-            font-weight: 700;
-        }
-
-        .kpi-card .sub {
-            font-size: 10px;
-            color: #555;
-            margin-top: 2px;
-        }
-
-        .kpi-card.blue .value { color: #00d4ff; }
-        .kpi-card.red .value { color: #f87171; }
-        .kpi-card.green .value { color: #4ade80; }
-        .kpi-card.yellow .value { color: #fbbf24; }
-        .kpi-card.purple .value { color: #a78bfa; }
-        .kpi-card.orange .value { color: #fb923c; }
-
-        /* Charts Grid - 2 rows, more charts */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 8px;
-            flex: 1;
+            overflow: hidden;
             min-height: 0;
         }
 
-        .chart-card {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            padding: 10px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            display: flex;
-            flex-direction: column;
-        }
+        .page { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+        .page.active { display: flex; }
 
-        .chart-card.span-2 {
-            grid-column: span 2;
-        }
-
-        .chart-card h3 {
-            font-size: 11px;
-            font-weight: 600;
-            color: #aaa;
-            margin-bottom: 6px;
+        /* KPI Row */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
             flex-shrink: 0;
         }
 
-        .chart-container {
+        .kpi {
+            background: rgba(255,255,255,0.02);
+            border-radius: 6px;
+            padding: 8px 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+        }
+
+        .kpi .label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.3px; }
+        .kpi .value { font-size: 20px; font-weight: 700; margin: 2px 0; }
+        .kpi .sub { font-size: 9px; color: #444; }
+
+        .kpi.c1 .value { color: #00d4ff; }
+        .kpi.c2 .value { color: #4ade80; }
+        .kpi.c3 .value { color: #f87171; }
+        .kpi.c4 .value { color: #fbbf24; }
+        .kpi.c5 .value { color: #a78bfa; }
+        .kpi.c6 .value { color: #fb923c; }
+
+        /* Charts area */
+        .charts-area {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 6px;
+            min-height: 0;
+        }
+
+        .chart-box {
+            background: rgba(255,255,255,0.02);
+            border-radius: 6px;
+            padding: 8px 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chart-box.wide { grid-column: span 2; }
+
+        .chart-box h4 {
+            font-size: 10px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 4px;
+            flex-shrink: 0;
+        }
+
+        .chart-wrap {
             flex: 1;
             position: relative;
             min-height: 0;
         }
 
-        /* Ranking list compact */
-        .ranking-list {
-            list-style: none;
-            flex: 1;
-            overflow-y: auto;
-        }
+        /* Ranking */
+        .rank-list { flex: 1; overflow-y: auto; }
+        .rank-list::-webkit-scrollbar { width: 3px; }
+        .rank-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
 
-        .ranking-item {
+        .rank-item {
             display: flex;
             align-items: center;
-            padding: 4px 0;
-            font-size: 11px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 3px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
         }
 
-        .ranking-item:last-child { border-bottom: none; }
+        .rank-item:last-child { border: none; }
 
-        .ranking-item .rank {
-            width: 16px;
-            height: 16px;
+        .rank-num {
+            width: 14px;
+            height: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
-            font-size: 9px;
+            border-radius: 3px;
+            font-size: 8px;
             font-weight: 700;
             margin-right: 6px;
         }
 
-        .ranking-item .rank-1 { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-        .ranking-item .rank-2 { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-        .ranking-item .rank-3 { background: rgba(0, 212, 255, 0.2); color: #00d4ff; }
-        .ranking-item .rank-other { background: rgba(255, 255, 255, 0.08); color: #666; }
+        .rank-num.r1 { background: rgba(239,68,68,0.2); color: #f87171; }
+        .rank-num.r2 { background: rgba(251,191,36,0.2); color: #fbbf24; }
+        .rank-num.r3 { background: rgba(0,212,255,0.2); color: #00d4ff; }
+        .rank-num.r4 { background: rgba(255,255,255,0.05); color: #555; }
 
-        .ranking-item .name { flex: 1; color: #aaa; }
-        .ranking-item .count { font-weight: 600; color: #f87171; font-size: 10px; }
+        .rank-name { flex: 1; color: #888; }
+        .rank-val { color: #f87171; font-weight: 600; }
 
-        /* Scroll hint */
-        .scroll-hint {
-            position: fixed;
-            bottom: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 50;
-            cursor: pointer;
-            transition: opacity 0.3s;
+        /* Bottom bar */
+        .bottom-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
         }
 
-        .scroll-hint.hidden { opacity: 0; pointer-events: none; }
+        .bottom-bar .info { font-size: 11px; color: #555; }
 
-        .scroll-hint-text {
-            display: inline-flex;
+        .scroll-hint {
+            display: flex;
             align-items: center;
             gap: 4px;
-            padding: 3px 10px;
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.15);
-            border-radius: 10px;
             font-size: 10px;
-            color: rgba(0, 212, 255, 0.6);
-            animation: hintPulse 3s ease-in-out infinite;
+            color: rgba(0,212,255,0.5);
+            cursor: pointer;
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        @keyframes hintPulse {
+        @keyframes pulse {
             0%, 100% { opacity: 0.4; }
             50% { opacity: 0.8; }
         }
 
-        .scroll-hint-arrow {
-            font-size: 10px;
-            animation: arrowBounce 1.5s infinite;
-        }
-
-        @keyframes arrowBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(2px); }
-        }
-
-        /* Table section */
-        .table-section {
-            padding: 12px 0 20px;
-        }
-
-        .table-card {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .table-header {
-            display: flex;
-            justify-content: space-between;
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
             align-items: center;
-            margin-bottom: 10px;
+            justify-content: center;
+            z-index: 1000;
         }
 
-        .table-header h3 { font-size: 13px; font-weight: 600; color: #aaa; }
+        .modal-overlay.show { display: flex; }
 
-        .table-filters { display: flex; gap: 6px; }
+        .modal {
+            background: #1a1a24;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
 
-        .filter-input {
-            padding: 5px 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            color: #ccc;
+        .modal h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #ddd;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
             font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #ccc;
+            font-size: 13px;
             outline: none;
         }
 
-        .filter-input:focus { border-color: #00d4ff; }
-        .filter-input::placeholder { color: #555; }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #00d4ff;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        /* Table section (in modal for now) */
+        .table-section {
+            padding: 12px 0;
+        }
 
         .data-table {
             width: 100%;
@@ -297,29 +335,36 @@
             font-size: 11px;
         }
 
-        .data-table thead th {
+        .data-table th {
             padding: 8px 10px;
             text-align: left;
             font-weight: 600;
-            color: #666;
+            color: #555;
             text-transform: uppercase;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
             white-space: nowrap;
-            position: sticky;
-            top: 0;
-            background: rgba(15, 15, 26, 0.95);
         }
 
-        .data-table tbody tr {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-        }
-
-        .data-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
-
-        .data-table tbody td {
+        .data-table td {
             padding: 8px 10px;
-            color: #aaa;
+            color: #999;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
         }
+
+        .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .status-select {
+            padding: 3px 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #ccc;
+            font-size: 10px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .status-select option { background: #1a1a24; }
 
         .badge {
             display: inline-block;
@@ -329,596 +374,650 @@
             font-weight: 600;
         }
 
-        .badge-info { background: rgba(0, 212, 255, 0.15); color: #00d4ff; }
+        .badge-info { background: rgba(0,212,255,0.15); color: #00d4ff; }
 
-        .ng-high { color: #f87171; font-weight: 600; }
-        .ng-medium { color: #fbbf24; font-weight: 600; }
-        .ng-low { color: #4ade80; font-weight: 600; }
+        .ng-h { color: #f87171; font-weight: 600; }
+        .ng-m { color: #fbbf24; font-weight: 600; }
+        .ng-l { color: #4ade80; font-weight: 600; }
 
-        .table-scroll { max-height: 300px; overflow-y: auto; }
-        .table-scroll::-webkit-scrollbar { width: 4px; }
-        .table-scroll::-webkit-scrollbar-track { background: transparent; }
-        .table-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 4px;
+        /* Detail panel */
+        .detail-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 400px;
+            background: #12121a;
+            border-left: 1px solid rgba(255,255,255,0.08);
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
         }
 
-        .status-dot.pending { background: #fbbf24; }
-        .status-dot.resolved { background: #4ade80; }
-        .status-dot.processing { background: #00d4ff; }
+        .detail-panel.show { transform: translateX(0); }
 
-        .back-to-top {
-            position: fixed;
-            bottom: 16px;
-            right: 16px;
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #00d4ff, #7c3aed);
-            border-radius: 50%;
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .detail-header h3 { font-size: 14px; color: #ddd; }
+
+        .close-btn {
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 6px;
             cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 100;
+            background: rgba(255,255,255,0.05);
+            color: #888;
+            font-size: 16px;
         }
 
-        .back-to-top.visible { opacity: 1; }
-        .back-to-top::after { content: '↑'; color: #fff; font-size: 14px; font-weight: bold; }
+        .close-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .detail-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        .detail-content::-webkit-scrollbar { width: 4px; }
+        .detail-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        .detail-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .detail-filters input,
+        .detail-filters select {
+            flex: 1;
+            padding: 6px 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 5px;
+            color: #ccc;
+            font-size: 11px;
+            outline: none;
+        }
+
+        .detail-filters input:focus,
+        .detail-filters select:focus { border-color: #00d4ff; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="app">
+        <!-- Header -->
         <div class="header">
-            <h1>🔍 品质看板系统</h1>
-            <div class="datetime" id="datetime"></div>
+            <h1>品质看板系统</h1>
+            <div class="header-right">
+                <input type="date" class="date-picker" id="datePicker">
+                <button class="btn btn-primary" onclick="openModal()">+ 录入</button>
+                <button class="btn btn-ghost" onclick="toggleDetail()">明细</button>
+            </div>
         </div>
 
+        <!-- Tabs -->
         <div class="tabs">
-            <div class="tab active" data-tab="incoming">📦 来料品质</div>
-            <div class="tab" data-tab="process">⚙️ 过程品质</div>
+            <div class="tab active" data-tab="incoming">来料品质</div>
+            <div class="tab" data-tab="process">过程品质</div>
         </div>
 
-        <!-- 来料品质 -->
-        <div class="page-content active" id="page-incoming">
-            <div class="scroll-wrapper" id="incomingScroll">
-                <!-- KPI Row -->
+        <!-- Main -->
+        <div class="main">
+            <!-- 来料品质 -->
+            <div class="page active" id="page-incoming">
                 <div class="kpi-row">
-                    <div class="kpi-card blue">
-                        <div class="label">今日批次</div>
-                        <div class="value">12</div>
-                        <div class="sub">较昨日 -2</div>
-                    </div>
-                    <div class="kpi-card green">
-                        <div class="label">合格批次</div>
-                        <div class="value">9</div>
-                        <div class="sub">合格率 75%</div>
-                    </div>
-                    <div class="kpi-card red">
-                        <div class="label">不良批次</div>
-                        <div class="value">3</div>
-                        <div class="sub">较昨日 +1</div>
-                    </div>
-                    <div class="kpi-card yellow">
-                        <div class="label">本月不良率</div>
-                        <div class="value">2.8%</div>
-                        <div class="sub">目标 ≤2%</div>
-                    </div>
-                    <div class="kpi-card purple">
-                        <div class="label">待处理</div>
-                        <div class="value">5</div>
-                        <div class="sub">需跟进</div>
-                    </div>
-                    <div class="kpi-card orange">
-                        <div class="label">供应商数</div>
-                        <div class="value">8</div>
-                        <div class="sub">活跃中</div>
-                    </div>
+                    <div class="kpi c1"><div class="label">今日批次</div><div class="value" id="kpi-i-total">12</div><div class="sub">来料总数</div></div>
+                    <div class="kpi c2"><div class="label">合格批次</div><div class="value" id="kpi-i-pass">9</div><div class="sub">合格率 75%</div></div>
+                    <div class="kpi c3"><div class="label">不良批次</div><div class="value" id="kpi-i-ng">3</div><div class="sub">较昨日 +1</div></div>
+                    <div class="kpi c4"><div class="label">不良率</div><div class="value" id="kpi-i-rate">2.8%</div><div class="sub">目标 ≤2%</div></div>
+                    <div class="kpi c5"><div class="label">待处理</div><div class="value" id="kpi-i-pending">5</div><div class="sub">需跟进</div></div>
+                    <div class="kpi c6"><div class="label">供应商</div><div class="value" id="kpi-i-supplier">8</div><div class="sub">活跃中</div></div>
                 </div>
 
-                <!-- Charts Grid: 4 columns x 2 rows = 8 charts -->
-                <div class="charts-grid">
-                    <!-- Row 1 -->
-                    <div class="chart-card span-2">
-                        <h3>📈 来料不良率趋势（近30天）</h3>
-                        <div class="chart-container"><canvas id="chart1"></canvas></div>
+                <div class="charts-area">
+                    <div class="chart-box wide">
+                        <h4>不良率趋势（近14天）</h4>
+                        <div class="chart-wrap"><canvas id="ic1"></canvas></div>
                     </div>
-                    <div class="chart-card">
-                        <h3>🔴 不良原因分布</h3>
-                        <div class="chart-container"><canvas id="chart2"></canvas></div>
+                    <div class="chart-box">
+                        <h4>不良原因分布</h4>
+                        <div class="chart-wrap"><canvas id="ic2"></canvas></div>
                     </div>
-                    <div class="chart-card">
-                        <h3>🏭 供应商不良TOP</h3>
-                        <ul class="ranking-list">
-                            <li class="ranking-item"><span class="rank rank-1">1</span><span class="name">Anhui Meizhi</span><span class="count">8次</span></li>
-                            <li class="ranking-item"><span class="rank rank-2">2</span><span class="name">Shenzhen Parts</span><span class="count">5次</span></li>
-                            <li class="ranking-item"><span class="rank rank-3">3</span><span class="name">Guangzhou Mat.</span><span class="count">4次</span></li>
-                            <li class="ranking-item"><span class="rank rank-other">4</span><span class="name">Dongguan Steel</span><span class="count">3次</span></li>
-                            <li class="ranking-item"><span class="rank rank-other">5</span><span class="name">Jiangsu Elec.</span><span class="count">2次</span></li>
-                            <li class="ranking-item"><span class="rank rank-other">6</span><span class="name">Beijing Comp.</span><span class="count">1次</span></li>
-                        </ul>
+                    <div class="chart-box">
+                        <h4>供应商不良TOP</h4>
+                        <div class="rank-list" id="i-rank"></div>
                     </div>
-                    <!-- Row 2 -->
-                    <div class="chart-card">
-                        <h3>📊 供应商不良率对比</h3>
-                        <div class="chart-container"><canvas id="chart3"></canvas></div>
+                    <div class="chart-box">
+                        <h4>供应商不良率</h4>
+                        <div class="chart-wrap"><canvas id="ic3"></canvas></div>
                     </div>
-                    <div class="chart-card">
-                        <h3>📉 来料合格率趋势</h3>
-                        <div class="chart-container"><canvas id="chart4"></canvas></div>
+                    <div class="chart-box">
+                        <h4>合格率趋势</h4>
+                        <div class="chart-wrap"><canvas id="ic4"></canvas></div>
                     </div>
-                    <div class="chart-card">
-                        <h3>📦 每日来料批次</h3>
-                        <div class="chart-container"><canvas id="chart5"></canvas></div>
+                    <div class="chart-box">
+                        <h4>每日批次统计</h4>
+                        <div class="chart-wrap"><canvas id="ic5"></canvas></div>
                     </div>
-                    <div class="chart-card">
-                        <h3>⚠️ 不良类型帕累托</h3>
-                        <div class="chart-container"><canvas id="chart6"></canvas></div>
-                    </div>
-                </div>
-
-                <!-- Table -->
-                <div class="table-section">
-                    <div class="table-card">
-                        <div class="table-header">
-                            <h3>📋 来料品质明细</h3>
-                            <div class="table-filters">
-                                <input type="text" class="filter-input" placeholder="搜索..." id="incomingSearch">
-                                <select class="filter-input" id="incomingStatusFilter">
-                                    <option value="">全部状态</option>
-                                    <option value="pending">待处理</option>
-                                    <option value="processing">处理中</option>
-                                    <option value="resolved">已关闭</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="table-scroll">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>日期</th>
-                                        <th>供应商</th>
-                                        <th>产品</th>
-                                        <th>型号</th>
-                                        <th>不良原因</th>
-                                        <th>数量</th>
-                                        <th>不良率</th>
-                                        <th>发票</th>
-                                        <th>状态</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="incomingTableBody"></tbody>
-                            </table>
-                        </div>
+                    <div class="chart-box">
+                        <h4>不良类型分布</h4>
+                        <div class="chart-wrap"><canvas id="ic6"></canvas></div>
                     </div>
                 </div>
             </div>
 
-            <div class="scroll-hint" id="incomingHint" onclick="scrollToTable('incoming')">
-                <span class="scroll-hint-text"><span class="scroll-hint-arrow">↓</span>明细<span class="scroll-hint-arrow">↓</span></span>
+            <!-- 过程品质 -->
+            <div class="page" id="page-process">
+                <div class="kpi-row">
+                    <div class="kpi c1"><div class="label">今日产量</div><div class="value" id="kpi-p-output">2880</div><div class="sub">达成率 96%</div></div>
+                    <div class="kpi c3"><div class="label">不良数</div><div class="value" id="kpi-p-ng">23</div><div class="sub">较昨日 +5</div></div>
+                    <div class="kpi c4"><div class="label">不良率</div><div class="value" id="kpi-p-rate">0.8%</div><div class="sub">目标 ≤0.5%</div></div>
+                    <div class="kpi c2"><div class="label">合格率</div><div class="value" id="kpi-p-pass">99.2%</div><div class="sub">较上周 +0.1%</div></div>
+                    <div class="kpi c5"><div class="label">高频原因</div><div class="value" id="kpi-p-top">混料</div><div class="sub">占比 35%</div></div>
+                    <div class="kpi c6"><div class="label">待处理</div><div class="value" id="kpi-p-pending">7</div><div class="sub">需跟进</div></div>
+                </div>
+
+                <div class="charts-area">
+                    <div class="chart-box wide">
+                        <h4>不良趋势（近7天）</h4>
+                        <div class="chart-wrap"><canvas id="pc1"></canvas></div>
+                    </div>
+                    <div class="chart-box">
+                        <h4>不良原因帕累托</h4>
+                        <div class="chart-wrap"><canvas id="pc2"></canvas></div>
+                    </div>
+                    <div class="chart-box">
+                        <h4>产线不良对比</h4>
+                        <div class="chart-wrap"><canvas id="pc3"></canvas></div>
+                    </div>
+                    <div class="chart-box">
+                        <h4>产线不良率</h4>
+                        <div class="chart-wrap"><canvas id="pc4"></canvas></div>
+                    </div>
+                    <div class="chart-box">
+                        <h4>不良时段分布</h4>
+                        <div class="chart-wrap"><canvas id="pc5"></canvas></div>
+                    </div>
+                    <div class="chart-box">
+                        <h4>每日不良数</h4>
+                        <div class="chart-wrap"><canvas id="pc6"></canvas></div>
+                    </div>
+                    <div class="chart-box">
+                        <h4>不良类型分布</h4>
+                        <div class="chart-wrap"><canvas id="pc7"></canvas></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 过程品质 -->
-        <div class="page-content" id="page-process">
-            <div class="scroll-wrapper" id="processScroll">
-                <!-- KPI Row -->
-                <div class="kpi-row">
-                    <div class="kpi-card blue">
-                        <div class="label">今日产量</div>
-                        <div class="value">2,880</div>
-                        <div class="sub">达成率 96%</div>
-                    </div>
-                    <div class="kpi-card red">
-                        <div class="label">今日不良</div>
-                        <div class="value">23</div>
-                        <div class="sub">较昨日 +5</div>
-                    </div>
-                    <div class="kpi-card yellow">
-                        <div class="label">不良率</div>
-                        <div class="value">0.8%</div>
-                        <div class="sub">目标 ≤0.5%</div>
-                    </div>
-                    <div class="kpi-card green">
-                        <div class="label">本周合格率</div>
-                        <div class="value">99.2%</div>
-                        <div class="sub">较上周 +0.1%</div>
-                    </div>
-                    <div class="kpi-card purple">
-                        <div class="label">高频原因</div>
-                        <div class="value">混料</div>
-                        <div class="sub">占比 35%</div>
-                    </div>
-                    <div class="kpi-card orange">
-                        <div class="label">待处理</div>
-                        <div class="value">7</div>
-                        <div class="sub">需跟进</div>
-                    </div>
-                </div>
+        <!-- Bottom bar -->
+        <div class="bottom-bar">
+            <span class="info" id="statusInfo">数据已保存 · 本地存储</span>
+            <span class="scroll-hint" onclick="toggleDetail()">↓ 查看明细 ↓</span>
+        </div>
+    </div>
 
-                <!-- Charts Grid -->
-                <div class="charts-grid">
-                    <!-- Row 1 -->
-                    <div class="chart-card span-2">
-                        <h3>📈 过程不良趋势（近7天）</h3>
-                        <div class="chart-container"><canvas id="chart7"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>🔴 不良原因帕累托</h3>
-                        <div class="chart-container"><canvas id="chart8"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>🏭 各产线不良对比</h3>
-                        <div class="chart-container"><canvas id="chart9"></canvas></div>
-                    </div>
-                    <!-- Row 2 -->
-                    <div class="chart-card">
-                        <h3>📊 产线不良率对比</h3>
-                        <div class="chart-container"><canvas id="chart10"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>⏰ 不良时段分布</h3>
-                        <div class="chart-container"><canvas id="chart11"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>📉 每日不良数趋势</h3>
-                        <div class="chart-container"><canvas id="chart12"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>🎯 不良类型分布</h3>
-                        <div class="chart-container"><canvas id="chart13"></canvas></div>
-                    </div>
-                </div>
-
-                <!-- Table -->
-                <div class="table-section">
-                    <div class="table-card">
-                        <div class="table-header">
-                            <h3>📋 过程品质明细</h3>
-                            <div class="table-filters">
-                                <input type="text" class="filter-input" placeholder="搜索..." id="processSearch">
-                                <select class="filter-input" id="processStatusFilter">
-                                    <option value="">全部状态</option>
-                                    <option value="pending">待处理</option>
-                                    <option value="processing">处理中</option>
-                                    <option value="resolved">已关闭</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="table-scroll">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>时间</th>
-                                        <th>产线</th>
-                                        <th>型号</th>
-                                        <th>零件号</th>
-                                        <th>不良原因</th>
-                                        <th>数量</th>
-                                        <th>不良率</th>
-                                        <th>状态</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="processTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+    <!-- Detail Panel -->
+    <div class="detail-panel" id="detailPanel">
+        <div class="detail-header">
+            <h3 id="detailTitle">来料品质明细</h3>
+            <div class="close-btn" onclick="toggleDetail()">×</div>
+        </div>
+        <div class="detail-content">
+            <div class="detail-filters">
+                <input type="text" placeholder="搜索..." id="detailSearch">
+                <select id="detailStatusFilter">
+                    <option value="">全部状态</option>
+                    <option value="pending">待处理</option>
+                    <option value="processing">处理中</option>
+                    <option value="resolved">已闭环</option>
+                </select>
             </div>
+            <table class="data-table">
+                <thead id="detailHead"></thead>
+                <tbody id="detailBody"></tbody>
+            </table>
+        </div>
+    </div>
 
-            <div class="scroll-hint" id="processHint" onclick="scrollToTable('process')" style="display:none">
-                <span class="scroll-hint-text"><span class="scroll-hint-arrow">↓</span>明细<span class="scroll-hint-arrow">↓</span></span>
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h3 id="modalTitle">录入数据</h3>
+            <div id="modalForm"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveRecord()">保存</button>
             </div>
         </div>
     </div>
 
-    <div class="back-to-top" id="backToTop" onclick="scrollToTop()"></div>
-
     <script>
-        // DateTime
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('datetime').textContent = now.toLocaleString('zh-CN', {
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-            });
+        // ===== Data Store =====
+        const Store = {
+            get(key, def = []) {
+                try { return JSON.parse(localStorage.getItem('qms_' + key)) || def; }
+                catch { return def; }
+            },
+            set(key, val) {
+                localStorage.setItem('qms_' + key, JSON.stringify(val));
+            }
+        };
+
+        // ===== State =====
+        let currentTab = 'incoming';
+        let currentDate = new Date().toISOString().split('T')[0];
+        let incomingData = Store.get('incoming', []);
+        let processData = Store.get('process', []);
+
+        // Init sample data if empty
+        if (incomingData.length === 0) {
+            incomingData = [
+                { id: 1, date: '2026-08-27', supplier: 'Anhui Meizhi', product: 'Rotor', model: 'BK13504861', reason: '通止规NG', qty: 2640, ngQty: 2, invoice: '0730', status: 'processing', countermeasure: 'QA已检' },
+                { id: 2, date: '2026-08-27', supplier: 'Shenzhen Parts', product: 'Stator', model: 'BK19603830', reason: '外观划痕', qty: 500, ngQty: 8, invoice: 'SZ0825', status: 'pending', countermeasure: '' },
+                { id: 3, date: '2026-08-26', supplier: 'Guangzhou Mat.', product: 'Cover', model: 'BK20501234', reason: '尺寸超差', qty: 1000, ngQty: 15, invoice: 'GZ0824', status: 'resolved', countermeasure: '已退货' },
+                { id: 4, date: '2026-08-26', supplier: 'Anhui Meizhi', product: 'Shaft', model: 'BK13504862', reason: '粗糙度NG', qty: 3000, ngQty: 45, invoice: '0729', status: 'processing', countermeasure: '' },
+                { id: 5, date: '2026-08-25', supplier: 'Dongguan Steel', product: 'Plate', model: 'BK30100001', reason: '硬度不足', qty: 200, ngQty: 5, invoice: 'DG0823', status: 'resolved', countermeasure: '换批次' },
+            ];
+            Store.set('incoming', incomingData);
         }
-        updateDateTime();
-        setInterval(updateDateTime, 1000);
+
+        if (processData.length === 0) {
+            processData = [
+                { id: 1, date: '2026-08-27', time: '15:50', line: 'B', model: 'PZ65E1B', partNo: 'BK19603830', reason: '混料', qty: 288, ngQty: 1, output: 2880, status: 'processing', requirement: '通知Pro.3检查' },
+                { id: 2, date: '2026-08-27', time: '14:20', line: 'A', model: 'PZ65E2A', partNo: 'BK13504861', reason: '装配松动', qty: 500, ngQty: 3, output: 2880, status: 'pending', requirement: '' },
+                { id: 3, date: '2026-08-26', time: '11:30', line: 'C', model: 'PZ70E3B', partNo: 'BK20501234', reason: '外观划伤', qty: 350, ngQty: 5, output: 2800, status: 'resolved', requirement: '检查治具' },
+                { id: 4, date: '2026-08-26', time: '09:45', line: 'B', model: 'PZ65E1B', partNo: 'BK30100001', reason: '异音', qty: 200, ngQty: 2, output: 2800, status: 'resolved', requirement: '' },
+                { id: 5, date: '2026-08-25', time: '16:10', line: 'D', model: 'PZ80E4C', partNo: 'BK40200015', reason: '电气不良', qty: 450, ngQty: 4, output: 2750, status: 'resolved', requirement: '' },
+            ];
+            Store.set('process', processData);
+        }
+
+        // ===== Init =====
+        document.getElementById('datePicker').value = currentDate;
+        document.getElementById('datePicker').addEventListener('change', (e) => {
+            currentDate = e.target.value;
+            refreshAll();
+        });
 
         // Tabs
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.page-content').forEach(p => {
-                    p.classList.remove('active');
-                });
-                document.querySelectorAll('.scroll-hint').forEach(h => h.style.display = 'none');
-                
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
                 tab.classList.add('active');
-                const page = document.getElementById('page-' + tab.dataset.tab);
-                page.classList.add('active');
-                
-                const hint = document.getElementById(tab.dataset.tab + 'Hint');
-                if (hint) hint.style.display = '';
-                
-                document.getElementById(tab.dataset.tab + 'Scroll').scrollTop = 0;
-                updateHintVisibility();
+                currentTab = tab.dataset.tab;
+                document.getElementById('page-' + currentTab).classList.add('active');
+                document.getElementById('detailTitle').textContent = currentTab === 'incoming' ? '来料品质明细' : '过程品质明细';
+                renderDetail();
             });
         });
 
-        // Scroll
-        function scrollToTable(type) {
-            const wrapper = document.getElementById(type + 'Scroll');
-            wrapper.querySelector('.table-section').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function scrollToTop() {
-            const active = document.querySelector('.page-content.active');
-            active.querySelector('.scroll-wrapper').scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function updateHintVisibility() {
-            const active = document.querySelector('.page-content.active');
-            if (!active) return;
-            const wrapper = active.querySelector('.scroll-wrapper');
-            const tab = document.querySelector('.tab.active');
-            const hint = tab ? document.getElementById(tab.dataset.tab + 'Hint') : null;
-            const btn = document.getElementById('backToTop');
+        // ===== KPI Update =====
+        function updateKPI() {
+            const todayData = incomingData.filter(d => d.date === currentDate);
+            const ngData = todayData.filter(d => d.ngQty > 0);
+            const pendingData = todayData.filter(d => d.status === 'pending' || d.status === 'processing');
+            const suppliers = [...new Set(todayData.map(d => d.supplier))];
             
-            if (wrapper.scrollTop > 80) {
-                if (hint) hint.classList.add('hidden');
-                btn.classList.add('visible');
-            } else {
-                if (hint) hint.classList.remove('hidden');
-                btn.classList.remove('visible');
+            const totalQty = todayData.reduce((s, d) => s + d.qty, 0);
+            const totalNg = todayData.reduce((s, d) => s + d.ngQty, 0);
+            const ngRate = totalQty > 0 ? (totalNg / totalQty * 100).toFixed(1) : 0;
+
+            document.getElementById('kpi-i-total').textContent = todayData.length;
+            document.getElementById('kpi-i-pass').textContent = todayData.length - ngData.length;
+            document.getElementById('kpi-i-ng').textContent = ngData.length;
+            document.getElementById('kpi-i-rate').textContent = ngRate + '%';
+            document.getElementById('kpi-i-pending').textContent = pendingData.length;
+            document.getElementById('kpi-i-supplier').textContent = suppliers.length;
+
+            // Process KPI
+            const pToday = processData.filter(d => d.date === currentDate);
+            const pOutput = pToday.length > 0 ? pToday[0].output || 0 : 0;
+            const pNg = pToday.reduce((s, d) => s + d.ngQty, 0);
+            const pRate = pOutput > 0 ? (pNg / pOutput * 100).toFixed(2) : 0;
+            const pPending = pToday.filter(d => d.status === 'pending' || d.status === 'processing');
+            
+            // Top reason
+            const reasonCount = {};
+            pToday.forEach(d => { reasonCount[d.reason] = (reasonCount[d.reason] || 0) + d.ngQty; });
+            const topReason = Object.entries(reasonCount).sort((a, b) => b[1] - a[1])[0];
+
+            document.getElementById('kpi-p-output').textContent = pOutput.toLocaleString();
+            document.getElementById('kpi-p-ng').textContent = pNg;
+            document.getElementById('kpi-p-rate').textContent = pRate + '%';
+            document.getElementById('kpi-p-pass').textContent = (100 - pRate).toFixed(2) + '%';
+            document.getElementById('kpi-p-top').textContent = topReason ? topReason[0] : '-';
+            document.getElementById('kpi-p-pending').textContent = pPending.length;
+        }
+
+        // ===== Charts =====
+        Chart.defaults.color = '#555';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.03)';
+        Chart.defaults.font.size = 9;
+
+        const charts = {};
+
+        function initCharts() {
+            // Incoming charts
+            charts.ic1 = new Chart(document.getElementById('ic1'), {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 14}, (_, i) => (i + 1).toString()),
+                    datasets: [{
+                        data: [1.2, 1.8, 1.5, 2.1, 1.9, 2.5, 2.2, 1.8, 2.0, 1.6, 1.4, 1.7, 2.3, 2.8],
+                        borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.08)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 1.5
+                    }, {
+                        data: Array(14).fill(2), borderColor: '#f87171', borderDash: [3, 3], pointRadius: 0, borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+            });
+
+            charts.ic2 = new Chart(document.getElementById('ic2'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['通止规', '外观', '尺寸', '材质', '其他'],
+                    datasets: [{ data: [25, 20, 18, 15, 10], backgroundColor: ['#f87171', '#fbbf24', '#00d4ff', '#a78bfa', '#555'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 6, padding: 2, font: { size: 8 } } } }, cutout: '55%' }
+            });
+
+            charts.ic3 = new Chart(document.getElementById('ic3'), {
+                type: 'bar',
+                data: {
+                    labels: ['Meizhi', 'Parts', 'Mat.', 'Steel', 'Elec.'],
+                    datasets: [{ data: [2.5, 1.8, 1.6, 1.2, 0.9], backgroundColor: ['#f87171', '#fbbf24', '#00d4ff', '#a78bfa', '#4ade80'], borderRadius: 2, barPercentage: 0.5 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.02)' } }, y: { grid: { display: false } } } }
+            });
+
+            charts.ic4 = new Chart(document.getElementById('ic4'), {
+                type: 'line',
+                data: {
+                    labels: ['W1', 'W2', 'W3', 'W4'],
+                    datasets: [{ data: [97.5, 98.2, 97.8, 97.2], borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.08)', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 1.5 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { min: 95, max: 100, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+            });
+
+            charts.ic5 = new Chart(document.getElementById('ic5'), {
+                type: 'bar',
+                data: {
+                    labels: ['21', '22', '23', '24', '25', '26', '27'],
+                    datasets: [
+                        { data: [10, 12, 11, 13, 10, 11, 9], backgroundColor: 'rgba(74,222,128,0.6)', borderRadius: 2, barPercentage: 0.6 },
+                        { data: [1, 2, 1, 2, 2, 2, 3], backgroundColor: 'rgba(248,113,113,0.6)', borderRadius: 2, barPercentage: 0.6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, stacked: true, grid: { color: 'rgba(255,255,255,0.02)' } }, x: { stacked: true, grid: { display: false } } } }
+            });
+
+            charts.ic6 = new Chart(document.getElementById('ic6'), {
+                type: 'polarArea',
+                data: {
+                    labels: ['尺寸', '外观', '通止', '材质', '绝缘'],
+                    datasets: [{ data: [28, 22, 18, 12, 8], backgroundColor: ['rgba(0,212,255,0.5)', 'rgba(251,191,36,0.5)', 'rgba(248,113,113,0.5)', 'rgba(167,139,250,0.5)', 'rgba(74,222,128,0.5)'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 6, padding: 2, font: { size: 8 } } } },
+                    scales: { r: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { display: false } } } }
+            });
+
+            // Process charts
+            charts.pc1 = new Chart(document.getElementById('pc1'), {
+                type: 'line',
+                data: {
+                    labels: ['21', '22', '23', '24', '25', '26', '27'],
+                    datasets: [{
+                        data: [8, 12, 10, 15, 11, 13, 23], borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.08)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 1.5
+                    }, {
+                        data: [0.4, 0.6, 0.5, 0.7, 0.5, 0.6, 0.8], borderColor: '#fbbf24', tension: 0.4, pointRadius: 2, borderWidth: 1.5, yAxisID: 'y1'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(255,255,255,0.02)' } },
+                        y1: { beginAtZero: true, position: 'right', grid: { display: false } },
+                        x: { grid: { display: false } } } }
+            });
+
+            charts.pc2 = new Chart(document.getElementById('pc2'), {
+                type: 'bar',
+                data: {
+                    labels: ['混料', '外观', '装配', '尺寸', '电气'],
+                    datasets: [{ data: [31, 22, 18, 15, 12], backgroundColor: 'rgba(248,113,113,0.6)', borderRadius: 2, barPercentage: 0.5 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.02)' } }, x: { grid: { display: false } } } }
+            });
+
+            charts.pc3 = new Chart(document.getElementById('pc3'), {
+                type: 'bar',
+                data: {
+                    labels: ['A', 'B', 'C', 'D'],
+                    datasets: [{ data: [18, 25, 22, 14], backgroundColor: ['#00d4ff', '#a78bfa', '#fbbf24', '#4ade80'], borderRadius: 2, barPercentage: 0.5 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.02)' } }, x: { grid: { display: false } } } }
+            });
+
+            charts.pc4 = new Chart(document.getElementById('pc4'), {
+                type: 'radar',
+                data: {
+                    labels: ['A', 'B', 'C', 'D'],
+                    datasets: [{ data: [0.7, 0.9, 0.8, 0.5], borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.1)', pointBackgroundColor: '#00d4ff', pointRadius: 2 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { r: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' }, angleLines: { color: 'rgba(255,255,255,0.03)' }, ticks: { display: false } } } }
+            });
+
+            charts.pc5 = new Chart(document.getElementById('pc5'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['8-10', '10-12', '13-15', '15-17'],
+                    datasets: [{ data: [12, 18, 25, 22], backgroundColor: ['#4ade80', '#00d4ff', '#fbbf24', '#f87171'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 6, padding: 2, font: { size: 8 } } } }, cutout: '50%' }
+            });
+
+            charts.pc6 = new Chart(document.getElementById('pc6'), {
+                type: 'bar',
+                data: {
+                    labels: ['21', '22', '23', '24', '25', '26', '27'],
+                    datasets: [{ data: [8, 12, 10, 15, 11, 13, 23], backgroundColor: 'rgba(167,139,250,0.6)', borderRadius: 2, barPercentage: 0.5 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.02)' } }, x: { grid: { display: false } } } }
+            });
+
+            charts.pc7 = new Chart(document.getElementById('pc7'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['混料', '外观', '装配', '尺寸', '电气'],
+                    datasets: [{ data: [31, 22, 18, 15, 12], backgroundColor: ['#f87171', '#fbbf24', '#00d4ff', '#a78bfa', '#4ade80'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 6, padding: 2, font: { size: 8 } } } }, cutout: '55%' }
+            });
+        }
+
+        // Ranking
+        function renderRanking() {
+            const suppliers = {};
+            incomingData.forEach(d => {
+                if (d.ngQty > 0) suppliers[d.supplier] = (suppliers[d.supplier] || 0) + 1;
+            });
+            const sorted = Object.entries(suppliers).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            document.getElementById('i-rank').innerHTML = sorted.map((s, i) => `
+                <div class="rank-item">
+                    <span class="rank-num r${i < 3 ? i + 1 : 4}">${i + 1}</span>
+                    <span class="rank-name">${s[0]}</span>
+                    <span class="rank-val">${s[1]}次</span>
+                </div>
+            `).join('');
+        }
+
+        // ===== Detail Panel =====
+        function toggleDetail() {
+            document.getElementById('detailPanel').classList.toggle('show');
+            renderDetail();
+        }
+
+        function renderDetail() {
+            const data = currentTab === 'incoming' ? incomingData : processData;
+            const filtered = data.filter(d => d.date === currentDate);
+            
+            const isI = currentTab === 'incoming';
+            document.getElementById('detailHead').innerHTML = `<tr>
+                ${isI ? '<th>供应商</th><th>产品</th>' : '<th>时间</th><th>产线</th>'}
+                <th>型号</th><th>不良原因</th><th>数量</th><th>不良率</th><th>状态</th>
+            </tr>`;
+
+            document.getElementById('detailBody').innerHTML = filtered.map(d => {
+                const rate = d.qty > 0 ? (d.ngQty / d.qty * 100).toFixed(2) : 0;
+                const ngClass = rate > 1.5 ? 'ng-h' : rate > 0.5 ? 'ng-m' : 'ng-l';
+                return `<tr>
+                    ${isI ? `<td>${d.supplier}</td><td>${d.product}</td>` : `<td>${d.time || '-'}</td><td><span class="badge badge-info">${d.line}</span></td>`}
+                    <td>${d.model}</td>
+                    <td>${d.reason}</td>
+                    <td>${d.qty}(${d.ngQty})</td>
+                    <td class="${ngClass}">${rate}%</td>
+                    <td>
+                        <select class="status-select" onchange="updateStatus(${d.id}, this.value)">
+                            <option value="pending" ${d.status === 'pending' ? 'selected' : ''}>待处理</option>
+                            <option value="processing" ${d.status === 'processing' ? 'selected' : ''}>处理中</option>
+                            <option value="resolved" ${d.status === 'resolved' ? 'selected' : ''}>已闭环</option>
+                        </select>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function updateStatus(id, status) {
+            const data = currentTab === 'incoming' ? incomingData : processData;
+            const item = data.find(d => d.id === id);
+            if (item) {
+                item.status = status;
+                Store.set(currentTab, data);
+                updateKPI();
+                document.getElementById('statusInfo').textContent = '状态已更新 · ' + new Date().toLocaleTimeString();
             }
         }
 
-        document.getElementById('incomingScroll').addEventListener('scroll', updateHintVisibility);
-        document.getElementById('processScroll').addEventListener('scroll', updateHintVisibility);
-
-        // Chart defaults
-        Chart.defaults.color = '#666';
-        Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
-        Chart.defaults.font.size = 9;
-
-        // === 来料品质图表 ===
-        // Chart 1: 不良率趋势
-        new Chart(document.getElementById('chart1'), {
-            type: 'line',
-            data: {
-                labels: ['1', '3', '5', '7', '9', '11', '13', '15', '17', '19', '21', '23', '25', '27'],
-                datasets: [{
-                    label: '不良率%', data: [1.2, 1.8, 1.5, 2.1, 1.9, 2.5, 2.2, 1.8, 2.0, 1.6, 1.4, 1.7, 2.3, 2.8],
-                    borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2
-                }, {
-                    label: '目标', data: Array(14).fill(2),
-                    borderColor: '#f87171', borderDash: [3, 3], pointRadius: 0, borderWidth: 1
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
-        });
-
-        // Chart 2: 不良原因饼图
-        new Chart(document.getElementById('chart2'), {
-            type: 'doughnut',
-            data: {
-                labels: ['通止规', '外观', '尺寸', '材质', '绝缘', '其他'],
-                datasets: [{ data: [25, 20, 18, 15, 12, 10], backgroundColor: ['#f87171', '#fbbf24', '#00d4ff', '#a78bfa', '#4ade80', '#555'], borderWidth: 0 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 6, padding: 2, font: { size: 8 } } } }, cutout: '55%' }
-        });
-
-        // Chart 3: 供应商不良率对比
-        new Chart(document.getElementById('chart3'), {
-            type: 'bar',
-            data: {
-                labels: ['Meizhi', 'Parts', 'Mat.', 'Steel', 'Elec.'],
-                datasets: [{ data: [2.5, 1.8, 1.6, 1.2, 0.9], backgroundColor: ['#f87171', '#fbbf24', '#00d4ff', '#a78bfa', '#4ade80'], borderRadius: 3, barPercentage: 0.6 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' } }, y: { grid: { display: false } } } }
-        });
-
-        // Chart 4: 合格率趋势
-        new Chart(document.getElementById('chart4'), {
-            type: 'line',
-            data: {
-                labels: ['W1', 'W2', 'W3', 'W4'],
-                datasets: [{ label: '合格率%', data: [97.5, 98.2, 97.8, 97.2], borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { min: 95, max: 100, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
-        });
-
-        // Chart 5: 每日来料批次
-        new Chart(document.getElementById('chart5'), {
-            type: 'bar',
-            data: {
-                labels: ['21', '22', '23', '24', '25', '26', '27'],
-                datasets: [
-                    { label: '合格', data: [10, 12, 11, 13, 10, 11, 9], backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 2, barPercentage: 0.7 },
-                    { label: '不良', data: [1, 2, 1, 2, 2, 2, 3], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 2, barPercentage: 0.7 }
-                ]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, stacked: true, grid: { color: 'rgba(255,255,255,0.03)' } }, x: { stacked: true, grid: { display: false } } } }
-        });
-
-        // Chart 6: 不良类型帕累托
-        new Chart(document.getElementById('chart6'), {
-            type: 'bar',
-            data: {
-                labels: ['尺寸', '外观', '通止', '材质', '绝缘'],
-                datasets: [{ data: [28, 22, 18, 12, 8], backgroundColor: 'rgba(251,191,36,0.7)', borderRadius: 3, barPercentage: 0.6 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' } }, x: { grid: { display: false } } } }
-        });
-
-        // === 过程品质图表 ===
-        // Chart 7: 不良趋势
-        new Chart(document.getElementById('chart7'), {
-            type: 'line',
-            data: {
-                labels: ['21', '22', '23', '24', '25', '26', '27'],
-                datasets: [{
-                    label: '不良数', data: [8, 12, 10, 15, 11, 13, 23],
-                    borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2
-                }, {
-                    label: '不良率%', data: [0.4, 0.6, 0.5, 0.7, 0.5, 0.6, 0.8],
-                    borderColor: '#fbbf24', tension: 0.4, pointRadius: 3, borderWidth: 2, yAxisID: 'y1'
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(255,255,255,0.03)' } },
-                    y1: { beginAtZero: true, position: 'right', grid: { display: false } },
-                    x: { grid: { display: false } } } }
-        });
-
-        // Chart 8: 不良原因帕累托
-        new Chart(document.getElementById('chart8'), {
-            type: 'bar',
-            data: {
-                labels: ['混料', '外观', '装配', '尺寸', '电气'],
-                datasets: [{ data: [31, 22, 18, 15, 12], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 3, barPercentage: 0.6 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' } }, x: { grid: { display: false } } } }
-        });
-
-        // Chart 9: 各产线不良对比
-        new Chart(document.getElementById('chart9'), {
-            type: 'bar',
-            data: {
-                labels: ['A', 'B', 'C', 'D'],
-                datasets: [{ data: [18, 25, 22, 14], backgroundColor: ['#00d4ff', '#a78bfa', '#fbbf24', '#4ade80'], borderRadius: 3, barPercentage: 0.5 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' } }, x: { grid: { display: false } } } }
-        });
-
-        // Chart 10: 产线不良率
-        new Chart(document.getElementById('chart10'), {
-            type: 'radar',
-            data: {
-                labels: ['A Line', 'B Line', 'C Line', 'D Line'],
-                datasets: [{
-                    label: '不良率%', data: [0.7, 0.9, 0.8, 0.5],
-                    borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.1)', pointBackgroundColor: '#00d4ff', pointRadius: 3
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { r: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, angleLines: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false } } } }
-        });
-
-        // Chart 11: 时段分布
-        new Chart(document.getElementById('chart11'), {
-            type: 'doughnut',
-            data: {
-                labels: ['8-10', '10-12', '13-15', '15-17', '17-19'],
-                datasets: [{ data: [12, 18, 25, 22, 12], backgroundColor: ['#4ade80', '#00d4ff', '#fbbf24', '#f87171', '#a78bfa'], borderWidth: 0 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 6, padding: 2, font: { size: 8 } } } }, cutout: '50%' }
-        });
-
-        // Chart 12: 每日不良数
-        new Chart(document.getElementById('chart12'), {
-            type: 'bar',
-            data: {
-                labels: ['21', '22', '23', '24', '25', '26', '27'],
-                datasets: [{ data: [8, 12, 10, 15, 11, 13, 23], backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 3, barPercentage: 0.6 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' } }, x: { grid: { display: false } } } }
-        });
-
-        // Chart 13: 不良类型分布
-        new Chart(document.getElementById('chart13'), {
-            type: 'polarArea',
-            data: {
-                labels: ['混料', '外观', '装配', '尺寸', '电气', '其他'],
-                datasets: [{ data: [31, 22, 18, 15, 12, 8], backgroundColor: ['rgba(248,113,113,0.6)', 'rgba(251,191,36,0.6)', 'rgba(0,212,255,0.6)', 'rgba(167,139,250,0.6)', 'rgba(74,222,128,0.6)', 'rgba(100,100,100,0.6)'] }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 6, padding: 2, font: { size: 8 } } } },
-                scales: { r: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false } } } }
-        });
-
-        // Tables
-        const incomingData = [
-            { date: '08-27', supplier: 'Anhui Meizhi', product: 'Rotor', model: 'BK13504861', reason: '通止规NG', qty: '2640(2)', ngRate: 0.08, invoice: '0730', status: 'processing' },
-            { date: '08-27', supplier: 'Shenzhen Parts', product: 'Stator', model: 'BK19603830', reason: '外观划痕', qty: '500(8)', ngRate: 1.6, invoice: 'SZ0825', status: 'pending' },
-            { date: '08-26', supplier: 'Guangzhou Mat.', product: 'Cover', model: 'BK20501234', reason: '尺寸超差', qty: '1000(15)', ngRate: 1.5, invoice: 'GZ0824', status: 'resolved' },
-            { date: '08-26', supplier: 'Anhui Meizhi', product: 'Shaft', model: 'BK13504862', reason: '粗糙度NG', qty: '3000(45)', ngRate: 1.5, invoice: '0729', status: 'processing' },
-            { date: '08-25', supplier: 'Dongguan Steel', product: 'Plate', model: 'BK30100001', reason: '硬度不足', qty: '200(5)', ngRate: 2.5, invoice: 'DG0823', status: 'resolved' },
-            { date: '08-25', supplier: 'Jiangsu Elec.', product: 'Winding', model: 'BK40200015', reason: '绝缘不良', qty: '800(12)', ngRate: 1.5, invoice: 'JS0822', status: 'pending' },
-            { date: '08-24', supplier: 'Anhui Meizhi', product: 'Rotor', model: 'BK13504861', reason: '通止规NG', qty: '2500(30)', ngRate: 1.2, invoice: '0728', status: 'resolved' },
-            { date: '08-24', supplier: 'Shenzhen Parts', product: 'End Cap', model: 'BK50300022', reason: '毛刺超标', qty: '1500(20)', ngRate: 1.33, invoice: 'SZ0820', status: 'resolved' },
-        ];
-
-        const processData = [
-            { time: '15:50', line: 'B', model: 'PZ65E1B', partNo: 'BK19603830', reason: '混料', qty: '288(1)', ngRate: 0.35, status: 'processing' },
-            { time: '14:20', line: 'A', model: 'PZ65E2A', partNo: 'BK13504861', reason: '装配松动', qty: '500(3)', ngRate: 0.6, status: 'pending' },
-            { time: '11:30', line: 'C', model: 'PZ70E3B', partNo: 'BK20501234', reason: '外观划伤', qty: '350(5)', ngRate: 1.43, status: 'processing' },
-            { time: '09:45', line: 'B', model: 'PZ65E1B', partNo: 'BK30100001', reason: '异音', qty: '200(2)', ngRate: 1.0, status: 'resolved' },
-            { time: '16:10', line: 'D', model: 'PZ80E4C', partNo: 'BK40200015', reason: '电气不良', qty: '450(4)', ngRate: 0.89, status: 'resolved' },
-            { time: '14:00', line: 'A', model: 'PZ65E2A', partNo: 'BK50300022', reason: '尺寸偏差', qty: '600(8)', ngRate: 1.33, status: 'resolved' },
-            { time: '10:30', line: 'C', model: 'PZ70E3B', partNo: 'BK60400033', reason: '混料', qty: '300(2)', ngRate: 0.67, status: 'resolved' },
-            { time: '15:20', line: 'B', model: 'PZ65E1B', partNo: 'BK70500044', reason: '漏工序', qty: '250(1)', ngRate: 0.4, status: 'resolved' },
-        ];
-
-        function renderIncomingTable(data) {
-            document.getElementById('incomingTableBody').innerHTML = data.map(r => `
-                <tr>
-                    <td>${r.date}</td><td>${r.supplier}</td><td>${r.product}</td><td>${r.model}</td>
-                    <td>${r.reason}</td><td>${r.qty}</td>
-                    <td class="${r.ngRate > 1.5 ? 'ng-high' : r.ngRate > 0.8 ? 'ng-medium' : 'ng-low'}">${r.ngRate}%</td>
-                    <td>${r.invoice}</td>
-                    <td><span class="status-dot ${r.status}"></span>${r.status === 'pending' ? '待处理' : r.status === 'processing' ? '处理中' : '已关闭'}</td>
-                </tr>
-            `).join('');
+        // ===== Modal =====
+        function openModal() {
+            const isI = currentTab === 'incoming';
+            document.getElementById('modalTitle').textContent = isI ? '录入来料品质' : '录入过程品质';
+            
+            document.getElementById('modalForm').innerHTML = isI ? `
+                <div class="form-row">
+                    <div class="form-group"><label>供应商</label><input id="f-supplier" placeholder="供应商名称"></div>
+                    <div class="form-group"><label>产品</label><input id="f-product" placeholder="产品名称"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>型号</label><input id="f-model" placeholder="型号"></div>
+                    <div class="form-group"><label>发票号</label><input id="f-invoice" placeholder="发票号"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>来料数量</label><input id="f-qty" type="number" placeholder="数量"></div>
+                    <div class="form-group"><label>不良数量</label><input id="f-ngQty" type="number" placeholder="不良数"></div>
+                </div>
+                <div class="form-group"><label>不良原因</label><input id="f-reason" placeholder="不良原因"></div>
+                <div class="form-group"><label>对策</label><textarea id="f-counter" rows="2" placeholder="对策措施"></textarea></div>
+            ` : `
+                <div class="form-row">
+                    <div class="form-group"><label>产线</label><select id="f-line"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+                    <div class="form-group"><label>时间</label><input id="f-time" type="time" value="${new Date().toTimeString().slice(0,5)}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>型号</label><input id="f-model" placeholder="型号"></div>
+                    <div class="form-group"><label>零件号</label><input id="f-partNo" placeholder="零件号"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>今日产量</label><input id="f-output" type="number" placeholder="产量"></div>
+                    <div class="form-group"><label>不良数量</label><input id="f-ngQty" type="number" placeholder="不良数"></div>
+                </div>
+                <div class="form-group"><label>不良原因</label><input id="f-reason" placeholder="不良原因"></div>
+                <div class="form-group"><label>QA要求</label><textarea id="f-req" rows="2" placeholder="QA要求"></textarea></div>
+            `;
+            
+            document.getElementById('modal').classList.add('show');
         }
 
-        function renderProcessTable(data) {
-            document.getElementById('processTableBody').innerHTML = data.map(r => `
-                <tr>
-                    <td>${r.time}</td><td><span class="badge badge-info">${r.line}</span></td>
-                    <td>${r.model}</td><td>${r.partNo}</td><td>${r.reason}</td><td>${r.qty}</td>
-                    <td class="${r.ngRate > 1.0 ? 'ng-high' : r.ngRate > 0.5 ? 'ng-medium' : 'ng-low'}">${r.ngRate}%</td>
-                    <td><span class="status-dot ${r.status}"></span>${r.status === 'pending' ? '待处理' : r.status === 'processing' ? '处理中' : '已关闭'}</td>
-                </tr>
-            `).join('');
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
         }
 
-        renderIncomingTable(incomingData);
-        renderProcessTable(processData);
+        function saveRecord() {
+            const isI = currentTab === 'incoming';
+            const id = Date.now();
+            
+            if (isI) {
+                const record = {
+                    id, date: currentDate,
+                    supplier: document.getElementById('f-supplier').value,
+                    product: document.getElementById('f-product').value,
+                    model: document.getElementById('f-model').value,
+                    invoice: document.getElementById('f-invoice').value,
+                    qty: parseInt(document.getElementById('f-qty').value) || 0,
+                    ngQty: parseInt(document.getElementById('f-ngQty').value) || 0,
+                    reason: document.getElementById('f-reason').value,
+                    countermeasure: document.getElementById('f-counter').value,
+                    status: 'pending'
+                };
+                incomingData.unshift(record);
+                Store.set('incoming', incomingData);
+            } else {
+                const record = {
+                    id, date: currentDate,
+                    time: document.getElementById('f-time').value,
+                    line: document.getElementById('f-line').value,
+                    model: document.getElementById('f-model').value,
+                    partNo: document.getElementById('f-partNo').value,
+                    output: parseInt(document.getElementById('f-output').value) || 0,
+                    qty: parseInt(document.getElementById('f-output').value) || 0,
+                    ngQty: parseInt(document.getElementById('f-ngQty').value) || 0,
+                    reason: document.getElementById('f-reason').value,
+                    requirement: document.getElementById('f-req').value,
+                    status: 'pending'
+                };
+                processData.unshift(record);
+                Store.set('process', processData);
+            }
+            
+            closeModal();
+            updateKPI();
+            renderDetail();
+            renderRanking();
+            document.getElementById('statusInfo').textContent = '数据已保存 · ' + new Date().toLocaleTimeString();
+        }
 
         // Filters
-        document.getElementById('incomingSearch').addEventListener('input', function(e) {
-            const k = e.target.value.toLowerCase();
-            renderIncomingTable(incomingData.filter(r => r.supplier.toLowerCase().includes(k) || r.reason.toLowerCase().includes(k)));
+        document.getElementById('detailSearch').addEventListener('input', function(e) {
+            renderDetail();
         });
 
-        document.getElementById('incomingStatusFilter').addEventListener('change', function(e) {
-            renderIncomingTable(e.target.value ? incomingData.filter(r => r.status === e.target.value) : incomingData);
+        document.getElementById('detailStatusFilter').addEventListener('change', function(e) {
+            renderDetail();
         });
 
-        document.getElementById('processSearch').addEventListener('input', function(e) {
-            const k = e.target.value.toLowerCase();
-            renderProcessTable(processData.filter(r => r.line.toLowerCase().includes(k) || r.reason.toLowerCase().includes(k)));
-        });
-
-        document.getElementById('processStatusFilter').addEventListener('change', function(e) {
-            renderProcessTable(e.target.value ? processData.filter(r => r.status === e.target.value) : processData);
-        });
+        // ===== Init =====
+        initCharts();
+        updateKPI();
+        renderRanking();
     </script>
 </body>
 </html>
