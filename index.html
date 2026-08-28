@@ -252,6 +252,22 @@
         let colFilters = { i: {}, p: {} };
         let sortState = { i: { col: null, asc: true }, p: { col: null, asc: true } };
 
+        // Debounce utility
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Cache for chart data (not affected by column filters)
+        let chartDataCache = { incoming: [], process: [] };
+
         // Time range
         function getDateRange() {
             const today = new Date();
@@ -358,7 +374,7 @@
             renderTables();
         }
 
-        // Chart click -> table filter
+        // Chart click -> table filter (only filters table, not charts)
         function chartClickFilter(chartId, clickedLabel, filterCol_name) {
             const type = chartId.startsWith('i') ? 'i' : 'p';
             const page = type === 'i' ? 'page-incoming' : 'page-process';
@@ -383,6 +399,7 @@
                 currentTab = type === 'i' ? 'incoming' : 'process';
             }
             
+            // Only render table, not charts
             renderTables();
             
             // Scroll to table
@@ -451,12 +468,36 @@
             setTimeout(() => { addSampleDataForce(); }, 500);
             setTimeout(() => { if (!dbReady) { if (incomingData.length === 0) loadFallbackData(); dbReady = true; setDbStatus('connected', t('connected')); refreshAll(); } }, 3000);
 
-            db.collection('incoming').onSnapshot({ next: snap => { incomingData = snap.docs.map(d => ({ id: d.id, ...d.data() })); usingFallbackData = false; checkDbReady(); }, error: err => { console.warn(err.message); checkDbReady(); } }, { includeMetadataChanges: true });
-            db.collection('process').onSnapshot({ next: snap => { processData = snap.docs.map(d => ({ id: d.id, ...d.data() })); usingFallbackData = false; checkDbReady(); }, error: err => { console.warn(err.message); checkDbReady(); } }, { includeMetadataChanges: true });
-            db.collection('settings').doc('dailyOutput').onSnapshot({ next: snap => { dailyOutput = snap.exists ? snap.data() : {}; checkDbReady(); }, error: err => { dailyOutput = {}; checkDbReady(); } }, { includeMetadataChanges: true });
+            // Use debounced refresh for snapshots to prevent excessive updates
+            db.collection('incoming').onSnapshot({ next: snap => { incomingData = snap.docs.map(d => ({ id: d.id, ...d.data() })); usingFallbackData = false; checkDbReady(); }, error: err => { console.warn(err.message); checkDbReady(); } });
+            db.collection('process').onSnapshot({ next: snap => { processData = snap.docs.map(d => ({ id: d.id, ...d.data() })); usingFallbackData = false; checkDbReady(); }, error: err => { console.warn(err.message); checkDbReady(); } });
+            db.collection('settings').doc('dailyOutput').onSnapshot({ next: snap => { dailyOutput = snap.exists ? snap.data() : {}; checkDbReady(); }, error: err => { dailyOutput = {}; checkDbReady(); } });
         }
 
-        function checkDbReady() { loadCount++; if (loadCount >= 3 && !dbReady) { dbReady = true; setDbStatus('connected', t('connected')); } refreshAll(); }
+        function checkDbReady() { 
+            loadCount++; 
+            if (loadCount >= 3 && !dbReady) { 
+                dbReady = true; 
+                setDbStatus('connected', t('connected')); 
+            } 
+            debouncedRefreshAll(); 
+        }
+
+        // Debounced refresh to prevent excessive updates
+        let refreshTimeout = null;
+        function debouncedRefreshAll() {
+            if (refreshTimeout) clearTimeout(refreshTimeout);
+            refreshTimeout = setTimeout(() => {
+                refreshAll();
+            }, 150);
+        }
+
+        function refreshAll() {
+            updateKPI();
+            updateCharts();
+            renderTables();
+            renderRanking();
+        }
 
         function addSampleDataForce() {
             const today = new Date();
