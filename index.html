@@ -239,18 +239,16 @@
         .ranking-item .name { flex: 1; }
         .ranking-item .count { font-weight: 600; color: #f87171; }
 
-        /* Scroll hint */
+        /* Scroll hint - floating, no layout space */
         .scroll-hint {
-            position: sticky;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            padding: 12px;
-            background: linear-gradient(to top, rgba(26, 26, 46, 0.95), transparent);
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
             cursor: pointer;
             transition: opacity 0.3s;
-            z-index: 10;
+            pointer-events: auto;
         }
 
         .scroll-hint.hidden {
@@ -261,30 +259,30 @@
         .scroll-hint-text {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 20px;
-            background: rgba(0, 212, 255, 0.15);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 20px;
-            font-size: 13px;
-            color: #00d4ff;
-            animation: bounce 2s infinite;
+            gap: 5px;
+            padding: 4px 14px;
+            background: rgba(0, 212, 255, 0.12);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            font-size: 11px;
+            color: rgba(0, 212, 255, 0.7);
+            backdrop-filter: blur(6px);
+            animation: hintPulse 3s ease-in-out infinite;
         }
 
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-5px); }
-            60% { transform: translateY(-3px); }
+        @keyframes hintPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
 
         .scroll-hint-arrow {
-            font-size: 16px;
+            font-size: 12px;
             animation: arrowBounce 1.5s infinite;
         }
 
         @keyframes arrowBounce {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(4px); }
+            50% { transform: translateY(3px); }
         }
 
         /* Data Table Section */
@@ -586,14 +584,15 @@
                 </div>
             </div>
 
-            <!-- Scroll Hint -->
-            <div class="scroll-hint" id="incomingHint" onclick="scrollToTable('incoming')">
-                <span class="scroll-hint-text">
-                    <span class="scroll-hint-arrow">↓</span>
-                    向下滑动查看数据明细
-                    <span class="scroll-hint-arrow">↓</span>
-                </span>
-            </div>
+        </div>
+
+        <!-- Scroll Hint (floating) -->
+        <div class="scroll-hint" id="incomingHint" onclick="scrollToTable('incoming')">
+            <span class="scroll-hint-text">
+                <span class="scroll-hint-arrow">↓</span>
+                查看明细
+                <span class="scroll-hint-arrow">↓</span>
+            </span>
         </div>
 
         <!-- 过程品质页面 -->
@@ -691,14 +690,15 @@
                 </div>
             </div>
 
-            <!-- Scroll Hint -->
-            <div class="scroll-hint" id="processHint" onclick="scrollToTable('process')">
-                <span class="scroll-hint-text">
-                    <span class="scroll-hint-arrow">↓</span>
-                    向下滑动查看数据明细
-                    <span class="scroll-hint-arrow">↓</span>
-                </span>
-            </div>
+        </div>
+
+        <!-- Scroll Hint (floating) -->
+        <div class="scroll-hint" id="processHint" onclick="scrollToTable('process')" style="display:none">
+            <span class="scroll-hint-text">
+                <span class="scroll-hint-arrow">↓</span>
+                查看明细
+                <span class="scroll-hint-arrow">↓</span>
+            </span>
         </div>
     </div>
 
@@ -724,8 +724,12 @@
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.scroll-hint').forEach(h => h.style.display = 'none');
                 tab.classList.add('active');
                 document.getElementById('page-' + tab.dataset.tab).classList.add('active');
+                // Show correct hint
+                const hint = document.getElementById(tab.dataset.tab + 'Hint');
+                if (hint) hint.style.display = '';
                 // Reset scroll position
                 document.getElementById(tab.dataset.tab + 'Scroll').scrollTop = 0;
                 updateHintVisibility();
@@ -751,14 +755,15 @@
             if (!activePage) return;
             
             const scrollWrapper = activePage.querySelector('.scroll-wrapper');
-            const hint = activePage.querySelector('.scroll-hint');
+            const activeTab = document.querySelector('.tab.active');
+            const hint = activeTab ? document.getElementById(activeTab.dataset.tab + 'Hint') : null;
             const backToTop = document.getElementById('backToTop');
             
             if (scrollWrapper.scrollTop > 100) {
-                hint.classList.add('hidden');
+                if (hint) hint.classList.add('hidden');
                 backToTop.classList.add('visible');
             } else {
-                hint.classList.remove('hidden');
+                if (hint) hint.classList.remove('hidden');
                 backToTop.classList.remove('visible');
             }
         }
