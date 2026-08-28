@@ -201,28 +201,34 @@
         .rank-name { flex: 1; color: #ffffff; }
         .rank-val { color: #f87171; font-weight: 700; }
 
-        /* Scroll hint - floating overlay */
+        /* Scroll hint - fixed floating */
         .scroll-hint {
-            position: sticky;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            padding: 10px;
-            background: linear-gradient(to top, rgba(10,10,15,0.95) 0%, transparent 100%);
-            pointer-events: none;
-            z-index: 10;
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .scroll-hint.hidden {
+            opacity: 0;
+            visibility: hidden;
         }
 
         .scroll-hint span {
             font-size: 11px;
             color: rgba(0,212,255,0.7);
             font-weight: 600;
+            padding: 4px 12px;
+            background: rgba(10,10,15,0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(0,212,255,0.2);
             animation: pulse 2s ease-in-out infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 0.4; }
+            0%, 100% { opacity: 0.5; }
             50% { opacity: 1; }
         }
 
@@ -557,6 +563,22 @@
                 currentTab = tab.dataset.tab;
                 document.getElementById('page-' + currentTab).classList.add('active');
                 document.getElementById('page-' + currentTab).scrollTop = 0;
+                // Show hint again
+                document.querySelectorAll('.scroll-hint').forEach(h => h.classList.remove('hidden'));
+            });
+        });
+
+        // Scroll hint visibility
+        document.querySelectorAll('.page').forEach(page => {
+            page.addEventListener('scroll', function() {
+                const hint = this.querySelector('.scroll-hint');
+                if (hint) {
+                    if (this.scrollTop > 100) {
+                        hint.classList.add('hidden');
+                    } else {
+                        hint.classList.remove('hidden');
+                    }
+                }
             });
         });
 
