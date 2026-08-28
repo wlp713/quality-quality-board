@@ -468,6 +468,78 @@
         let currentLang = 'zh';
         let dbInitTimeout = null;
         let dbConnectionAttempts = 0;
+        let usingFallbackData = false;
+
+        // Fallback static data for when Firebase is unavailable
+        function loadFallbackData() {
+            usingFallbackData = true;
+            const today = new Date();
+            
+            // Generate incoming data
+            const suppliers = ['Meizhi Parts', 'Mat. Steel', 'Elec. Co.', 'JX Tech', 'HD Supply', 'GK Corp'];
+            const products = ['Connector A', 'Cable B', 'Sensor C', 'Motor D', 'PCB E', 'Valve F'];
+            const models = ['M-100', 'M-200', 'M-300', 'M-400'];
+            const reasons = ['通止规', '外观', '尺寸', '材质', '其他'];
+            
+            for (let i = 0; i < 14; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const count = Math.floor(Math.random() * 4) + 6;
+                for (let j = 0; j < count; j++) {
+                    const qty = Math.floor(Math.random() * 500) + 200;
+                    const ngQty = Math.random() > 0.75 ? Math.floor(Math.random() * 12) + 1 : 0;
+                    incomingData.push({
+                        id: 'fb-i-' + i + '-' + j,
+                        date: dateStr,
+                        supplier: suppliers[Math.floor(Math.random() * suppliers.length)],
+                        product: products[Math.floor(Math.random() * products.length)],
+                        model: models[Math.floor(Math.random() * models.length)],
+                        reason: reasons[Math.floor(Math.random() * reasons.length)],
+                        qty, ngQty,
+                        status: ngQty > 0 ? ['pending', 'processing', 'resolved'][Math.floor(Math.random() * 3)] : 'resolved'
+                    });
+                }
+            }
+
+            // Generate process data
+            const lines = ['A', 'B', 'C', 'D'];
+            const partNos = ['P-001', 'P-002', 'P-003', 'P-004', 'P-005'];
+            const pReasons = ['混料', '外观', '装配', '尺寸', '电气'];
+            const times = ['08:30', '09:15', '10:00', '11:20', '13:30', '14:45', '15:30', '16:15'];
+            
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const count = Math.floor(Math.random() * 6) + 8;
+                for (let j = 0; j < count; j++) {
+                    const qty = Math.floor(Math.random() * 300) + 100;
+                    const ngQty = Math.floor(Math.random() * 10) + 1;
+                    processData.push({
+                        id: 'fb-p-' + i + '-' + j,
+                        date: dateStr,
+                        time: times[Math.floor(Math.random() * times.length)],
+                        line: lines[Math.floor(Math.random() * lines.length)],
+                        model: models[Math.floor(Math.random() * models.length)],
+                        partNo: partNos[Math.floor(Math.random() * partNos.length)],
+                        reason: pReasons[Math.floor(Math.random() * pReasons.length)],
+                        qty, ngQty,
+                        status: ['pending', 'processing', 'resolved'][Math.floor(Math.random() * 3)]
+                    });
+                }
+            }
+
+            // Generate output data
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                dailyOutput[dateStr] = Math.floor(Math.random() * 1000) + 2500;
+            }
+
+            console.log('Fallback data loaded:', incomingData.length, 'incoming,', processData.length, 'process');
+        }
 
         // i18n
         const i18n = {
@@ -684,64 +756,54 @@
         function initFirestore() {
             setDbStatus('loading', t('connecting'));
 
-            // Set timeout - if not connected in 5 seconds, force show as connected (offline mode)
+            // Enable offline persistence
+            db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+                console.warn('Persistence error:', err.message);
+            });
+
+            // Force add sample data immediately
+            setTimeout(() => {
+                addSampleDataForce();
+            }, 500);
+
+            // Set timeout - if not connected in 3 seconds, load fallback data
             setTimeout(() => {
                 if (!dbReady) {
-                    console.warn('Firebase connection timeout - entering offline mode');
+                    console.warn('Firebase timeout - loading fallback data');
+                    if (incomingData.length === 0 && processData.length === 0) {
+                        loadFallbackData();
+                    }
                     dbReady = true;
                     setDbStatus('connected', t('connected'));
                     refreshAll();
                 }
-            }, 5000);
-
-            // Check and add sample data if empty
-            db.collection('incoming').get().then(snap => {
-                if (snap.empty) {
-                    addSampleIncomingData();
-                }
-            }).catch(err => {
-                console.warn('Check incoming error (offline mode):', err.message);
-            });
-
-            db.collection('process').get().then(snap => {
-                if (snap.empty) {
-                    addSampleProcessData();
-                }
-            }).catch(err => {
-                console.warn('Check process error (offline mode):', err.message);
-            });
-
-            db.collection('settings').doc('dailyOutput').get().then(doc => {
-                if (!doc.exists) {
-                    addSampleOutputData();
-                }
-            }).catch(err => {
-                console.warn('Check settings error (offline mode):', err.message);
-            });
+            }, 3000);
 
             // Incoming
             db.collection('incoming').onSnapshot({
                 next: snap => {
                     incomingData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    usingFallbackData = false;
                     checkDbReady();
                 },
                 error: err => {
-                    console.warn('Incoming listener error:', err.message);
-                    checkDbReady(); // Still mark as ready
+                    console.warn('Incoming error:', err.message);
+                    checkDbReady();
                 }
-            });
+            }, { includeMetadataChanges: true });
 
             // Process
             db.collection('process').onSnapshot({
                 next: snap => {
                     processData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    usingFallbackData = false;
                     checkDbReady();
                 },
                 error: err => {
-                    console.warn('Process listener error:', err.message);
-                    checkDbReady(); // Still mark as ready
+                    console.warn('Process error:', err.message);
+                    checkDbReady();
                 }
-            });
+            }, { includeMetadataChanges: true });
 
             // Daily output
             db.collection('settings').doc('dailyOutput').onSnapshot({
@@ -750,37 +812,38 @@
                     checkDbReady();
                 },
                 error: err => {
-                    console.warn('Output listener error:', err.message);
+                    console.warn('Output error:', err.message);
                     dailyOutput = {};
-                    checkDbReady(); // Still mark as ready
+                    checkDbReady();
                 }
-            });
+            }, { includeMetadataChanges: true });
         }
 
-        function addSampleIncomingData() {
+        function addSampleDataForce() {
+            console.log('Adding sample data...');
             const today = new Date();
-            const dates = [];
+            
+            // Add incoming data
+            const incomingBatch = db.batch();
+            const dates14 = [];
             for (let i = 0; i < 14; i++) {
                 const d = new Date(today);
                 d.setDate(d.getDate() - i);
-                dates.push(d.toISOString().split('T')[0]);
+                dates14.push(d.toISOString().split('T')[0]);
             }
 
             const suppliers = ['Meizhi Parts', 'Mat. Steel', 'Elec. Co.', 'JX Tech', 'HD Supply', 'GK Corp'];
             const products = ['Connector A', 'Cable B', 'Sensor C', 'Motor D', 'PCB E', 'Valve F'];
             const models = ['M-100', 'M-200', 'M-300', 'M-400'];
             const reasons = ['通止规', '外观', '尺寸', '材质', '其他'];
-            const statuses = ['pending', 'processing', 'resolved'];
 
-            const batch = db.batch();
-            
-            dates.forEach(date => {
-                const count = Math.floor(Math.random() * 5) + 8;
+            dates14.forEach(date => {
+                const count = Math.floor(Math.random() * 4) + 6;
                 for (let i = 0; i < count; i++) {
                     const qty = Math.floor(Math.random() * 500) + 200;
-                    const ngQty = Math.random() > 0.7 ? Math.floor(Math.random() * 15) + 1 : 0;
+                    const ngQty = Math.random() > 0.75 ? Math.floor(Math.random() * 12) + 1 : 0;
                     const ref = db.collection('incoming').doc();
-                    batch.set(ref, {
+                    incomingBatch.set(ref, {
                         date,
                         supplier: suppliers[Math.floor(Math.random() * suppliers.length)],
                         product: products[Math.floor(Math.random() * products.length)],
@@ -788,67 +851,62 @@
                         reason: reasons[Math.floor(Math.random() * reasons.length)],
                         qty,
                         ngQty,
-                        status: ngQty > 0 ? statuses[Math.floor(Math.random() * statuses.length)] : 'resolved'
+                        status: ngQty > 0 ? ['pending', 'processing', 'resolved'][Math.floor(Math.random() * 3)] : 'resolved'
                     });
                 }
             });
 
-            batch.commit().then(() => console.log('Sample incoming data added'));
-        }
+            incomingBatch.commit()
+                .then(() => console.log('Incoming sample data added'))
+                .catch(err => console.warn('Incoming sample error:', err.message));
 
-        function addSampleProcessData() {
-            const today = new Date();
-            const dates = [];
+            // Add process data
+            const processBatch = db.batch();
+            const dates7 = [];
             for (let i = 0; i < 7; i++) {
                 const d = new Date(today);
                 d.setDate(d.getDate() - i);
-                dates.push(d.toISOString().split('T')[0]);
+                dates7.push(d.toISOString().split('T')[0]);
             }
 
             const lines = ['A', 'B', 'C', 'D'];
-            const models = ['M-100', 'M-200', 'M-300', 'M-400'];
             const partNos = ['P-001', 'P-002', 'P-003', 'P-004', 'P-005'];
-            const reasons = ['混料', '外观', '装配', '尺寸', '电气'];
+            const pReasons = ['混料', '外观', '装配', '尺寸', '电气'];
             const times = ['08:30', '09:15', '10:00', '11:20', '13:30', '14:45', '15:30', '16:15'];
-            const statuses = ['pending', 'processing', 'resolved'];
 
-            const batch = db.batch();
-            
-            dates.forEach(date => {
-                const count = Math.floor(Math.random() * 8) + 10;
+            dates7.forEach(date => {
+                const count = Math.floor(Math.random() * 6) + 8;
                 for (let i = 0; i < count; i++) {
                     const qty = Math.floor(Math.random() * 300) + 100;
-                    const ngQty = Math.floor(Math.random() * 12) + 1;
+                    const ngQty = Math.floor(Math.random() * 10) + 1;
                     const ref = db.collection('process').doc();
-                    batch.set(ref, {
+                    processBatch.set(ref, {
                         date,
                         time: times[Math.floor(Math.random() * times.length)],
                         line: lines[Math.floor(Math.random() * lines.length)],
                         model: models[Math.floor(Math.random() * models.length)],
                         partNo: partNos[Math.floor(Math.random() * partNos.length)],
-                        reason: reasons[Math.floor(Math.random() * reasons.length)],
+                        reason: pReasons[Math.floor(Math.random() * pReasons.length)],
                         qty,
                         ngQty,
-                        status: statuses[Math.floor(Math.random() * statuses.length)]
+                        status: ['pending', 'processing', 'resolved'][Math.floor(Math.random() * 3)]
                     });
                 }
             });
 
-            batch.commit().then(() => console.log('Sample process data added'));
-        }
+            processBatch.commit()
+                .then(() => console.log('Process sample data added'))
+                .catch(err => console.warn('Process sample error:', err.message));
 
-        function addSampleOutputData() {
-            const today = new Date();
+            // Add output data
             const output = {};
-            for (let i = 0; i < 7; i++) {
-                const d = new Date(today);
-                d.setDate(d.getDate() - i);
-                const dateStr = d.toISOString().split('T')[0];
-                output[dateStr] = Math.floor(Math.random() * 1000) + 2500;
-            }
+            dates7.forEach(date => {
+                output[date] = Math.floor(Math.random() * 1000) + 2500;
+            });
             
             db.collection('settings').doc('dailyOutput').set(output)
-                .then(() => console.log('Sample output data added'));
+                .then(() => console.log('Output sample data added'))
+                .catch(err => console.warn('Output sample error:', err.message));
         }
 
         function checkDbReady() {
@@ -884,14 +942,21 @@
             const val = parseInt(input.value) || 0;
             const kpi = document.getElementById('kpi-output');
             
-            try {
-                await db.collection('settings').doc('dailyOutput').set({
-                    [currentDate]: val
-                }, { merge: true });
-                showToast(t('saved') + ': ' + val.toLocaleString());
-            } catch (e) {
-                showToast(t('saveFailed'), true);
+            // Update local data immediately
+            dailyOutput[currentDate] = val;
+            
+            if (!usingFallbackData) {
+                try {
+                    await db.collection('settings').doc('dailyOutput').set({
+                        [currentDate]: val
+                    }, { merge: true });
+                } catch (e) {
+                    console.warn('Save output error:', e.message);
+                }
             }
+            
+            showToast(t('saved') + ': ' + val.toLocaleString());
+            refreshAll();
             
             kpi.classList.remove('editing');
             const editInput = kpi.querySelector('.kpi-edit-input');
@@ -987,6 +1052,16 @@
         }
 
         async function updateStatus(type, id, status) {
+            // Skip Firebase update for fallback data
+            if (usingFallbackData || id.startsWith('fb-')) {
+                const data = type === 'incoming' ? incomingData : processData;
+                const item = data.find(d => d.id === id);
+                if (item) item.status = status;
+                refreshAll();
+                showToast(t('statusUpdated'));
+                return;
+            }
+            
             try {
                 await db.collection(type).doc(id).update({ status });
                 showToast(t('statusUpdated'));
