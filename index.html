@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>品质看板系统</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
@@ -123,32 +124,11 @@
         .kpi.c5 .value { color: #a78bfa; }
         .kpi.c6 .value { color: #fb923c; }
 
-        /* Editable KPI */
-        .kpi.editable {
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .kpi.editable:hover {
-            border-color: #00d4ff;
-            background: rgba(0,212,255,0.05);
-        }
-
-        .kpi.editable .value::after {
-            content: '✏️';
-            font-size: 12px;
-            margin-left: 4px;
-            opacity: 0.5;
-        }
-
-        .kpi.editing {
-            border-color: #00d4ff;
-            background: rgba(0,212,255,0.1);
-        }
-
-        .kpi.editing .value {
-            display: none;
-        }
+        .kpi.editable { cursor: pointer; transition: all 0.2s; }
+        .kpi.editable:hover { border-color: #00d4ff; background: rgba(0,212,255,0.05); }
+        .kpi.editable .value::after { content: '✏️'; font-size: 12px; margin-left: 4px; opacity: 0.5; }
+        .kpi.editing { border-color: #00d4ff; background: rgba(0,212,255,0.1); }
+        .kpi.editing .value { display: none; }
 
         .kpi-edit-input {
             width: 100%;
@@ -307,7 +287,6 @@
         .ng-m { color: #fbbf24; font-weight: 700; }
         .ng-l { color: #4ade80; font-weight: 700; }
 
-        /* Toast */
         .toast {
             position: fixed;
             top: 20px;
@@ -333,7 +312,7 @@
         <div class="header">
             <h1>品质看板系统</h1>
             <div class="header-right">
-                <span class="db-status loading" id="dbStatus">连接中...</span>
+                <span class="db-status loading" id="dbStatus">初始化...</span>
                 <input type="date" class="date-picker" id="datePicker">
             </div>
         </div>
@@ -344,7 +323,6 @@
         </div>
 
         <div class="main">
-            <!-- 来料品质 -->
             <div class="page active" id="page-incoming">
                 <div class="kpi-row">
                     <div class="kpi c1"><div class="label">今日批次</div><div class="value" id="kpi-i-total">-</div><div class="sub">来料总数</div></div>
@@ -389,7 +367,6 @@
                 </div>
             </div>
 
-            <!-- 过程品质 -->
             <div class="page" id="page-process">
                 <div class="kpi-row">
                     <div class="kpi c1 editable" id="kpi-output" onclick="startEditOutput()">
@@ -460,7 +437,9 @@
         let currentDate = new Date().toISOString().split('T')[0];
         let incomingData = [];
         let processData = [];
-        let dailyOutput = {}; // { "2026-08-28": 2880 }
+        let dailyOutput = {};
+        let dbReady = false;
+        let loadCount = 0;
 
         const dbStatusEl = document.getElementById('dbStatus');
 
@@ -473,29 +452,43 @@
             setTimeout(() => t.className = 'toast', 2000);
         }
 
-        // Firestore listeners
+        // Firestore
         function initFirestore() {
+            setDbStatus('loading', '连接中...');
+
             // Incoming
             db.collection('incoming').onSnapshot(snap => {
                 incomingData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                setDbStatus('connected', '已连接');
-                refreshAll();
+                checkDbReady();
             }, err => {
-                console.error(err);
+                console.error('Incoming error:', err);
                 setDbStatus('disconnected', '连接失败');
             });
 
             // Process
             db.collection('process').onSnapshot(snap => {
                 processData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                refreshAll();
-            }, err => console.error(err));
+                checkDbReady();
+            }, err => console.error('Process error:', err));
 
             // Daily output
             db.collection('settings').doc('dailyOutput').onSnapshot(snap => {
-                dailyOutput = snap.data() || {};
-                refreshAll();
-            }, err => console.error(err));
+                dailyOutput = snap.exists ? snap.data() : {};
+                checkDbReady();
+            }, err => {
+                // Doc might not exist yet, that's ok
+                dailyOutput = {};
+                checkDbReady();
+            });
+        }
+
+        function checkDbReady() {
+            loadCount++;
+            if (loadCount >= 3 && !dbReady) {
+                dbReady = true;
+                setDbStatus('connected', '已连接');
+            }
+            refreshAll();
         }
 
         // Edit output
@@ -511,8 +504,7 @@
             
             setTimeout(() => {
                 const input = document.getElementById('output-input');
-                input.focus();
-                input.select();
+                if (input) { input.focus(); input.select(); }
             }, 50);
         }
 
@@ -527,7 +519,6 @@
                 await db.collection('settings').doc('dailyOutput').set({
                     [currentDate]: val
                 }, { merge: true });
-                
                 showToast('产量已保存: ' + val.toLocaleString());
             } catch (e) {
                 showToast('保存失败', true);
@@ -576,7 +567,6 @@
 
         // KPI
         function updateKPI() {
-            // Incoming
             const td = incomingData.filter(d => d.date === currentDate);
             const ng = td.filter(d => d.ngQty > 0);
             const pend = td.filter(d => d.status !== 'resolved');
@@ -592,7 +582,6 @@
             document.getElementById('kpi-i-pending').textContent = pend.length;
             document.getElementById('kpi-i-supplier').textContent = sups.length;
 
-            // Process
             const output = dailyOutput[currentDate] || 0;
             const pt = processData.filter(d => d.date === currentDate);
             const png = pt.reduce((s, d) => s + (d.ngQty || 0), 0);
@@ -644,29 +633,218 @@
             document.getElementById('i-rank').innerHTML = sorted.map((x, i) => `<div class="rank-item"><span class="rank-num r${i<3?i+1:4}">${i+1}</span><span class="rank-name">${x[0]}</span><span class="rank-val">${x[1]}次</span></div>`).join('');
         }
 
-        // Charts
+        // Charts with datalabels
+        Chart.register(window.ChartDataLabels);
         Chart.defaults.color = '#ffffff';
         Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
         Chart.defaults.font.size = 10;
         Chart.defaults.font.weight = '600';
 
-        const co = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+        const charts = {};
 
         function initCharts() {
-            new Chart('ic1', { type: 'line', data: { labels: Array.from({length:14},(_,i)=>(i+1)+''), datasets: [{ data: [1.2,1.8,1.5,2.1,1.9,2.5,2.2,1.8,2.0,1.6,1.4,1.7,2.3,2.8], borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 },{ data: Array(14).fill(2), borderColor: '#f87171', borderDash: [3,3], pointRadius: 0, borderWidth: 1 }] }, options: co });
-            new Chart('ic2', { type: 'doughnut', data: { labels: ['通止规','外观','尺寸','材质','其他'], datasets: [{ data: [25,20,18,15,10], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#555'], borderWidth: 0 }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } } }, cutout: '55%' });
-            new Chart('ic3', { type: 'bar', data: { labels: ['Meizhi','Parts','Mat.','Steel','Elec.'], datasets: [{ data: [2.5,1.8,1.6,1.2,0.9], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderRadius: 3, barPercentage: 0.5 }] }, options: { ...co, indexAxis: 'y' } });
-            new Chart('ic4', { type: 'line', data: { labels: ['W1','W2','W3','W4'], datasets: [{ data: [97.5,98.2,97.8,97.2], borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2 }] }, options: { ...co, scales: { y: { min: 95, max: 100 }, x: { grid: { display: false } } } } });
-            new Chart('ic5', { type: 'bar', data: { labels: ['21','22','23','24','25','26','27'], datasets: [{ data: [10,12,11,13,10,11,9], backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 2, barPercentage: 0.6 },{ data: [1,2,1,2,2,2,3], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 2, barPercentage: 0.6 }] }, options: { ...co, scales: { y: { beginAtZero: true, stacked: true }, x: { stacked: true, grid: { display: false } } } } });
-            new Chart('ic6', { type: 'polarArea', data: { labels: ['尺寸','外观','通止','材质','绝缘'], datasets: [{ data: [28,22,18,12,8], backgroundColor: ['rgba(0,212,255,0.6)','rgba(251,191,36,0.6)','rgba(248,113,113,0.6)','rgba(167,139,250,0.6)','rgba(74,222,128,0.6)'] }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } } } });
+            const dlPlugin = {
+                display: true,
+                color: '#fff',
+                font: { size: 9, weight: '600' },
+                formatter: Math.round
+            };
 
-            new Chart('pc1', { type: 'line', data: { labels: ['21','22','23','24','25','26','27'], datasets: [{ data: [8,12,10,15,11,13,23], borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },{ data: [0.4,0.6,0.5,0.7,0.5,0.6,0.8], borderColor: '#fbbf24', tension: 0.4, pointRadius: 3, borderWidth: 2, yAxisID: 'y1' }] }, options: { ...co, scales: { y: { beginAtZero: true, position: 'left' }, y1: { beginAtZero: true, position: 'right', grid: { display: false } }, x: { grid: { display: false } } } } });
-            new Chart('pc2', { type: 'bar', data: { labels: ['混料','外观','装配','尺寸','电气'], datasets: [{ data: [31,22,18,15,12], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 3, barPercentage: 0.5 }] }, options: co });
-            new Chart('pc3', { type: 'bar', data: { labels: ['A','B','C','D'], datasets: [{ data: [18,25,22,14], backgroundColor: ['#00d4ff','#a78bfa','#fbbf24','#4ade80'], borderRadius: 3, barPercentage: 0.5 }] }, options: co });
-            new Chart('pc4', { type: 'radar', data: { labels: ['A','B','C','D'], datasets: [{ data: [0.7,0.9,0.8,0.5], borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.15)', pointBackgroundColor: '#00d4ff', pointRadius: 3 }] }, options: { ...co, scales: { r: { beginAtZero: true, ticks: { display: false }, pointLabels: { color: '#fff', font: { size: 11, weight: '600' } } } } } });
-            new Chart('pc5', { type: 'doughnut', data: { labels: ['8-10','10-12','13-15','15-17'], datasets: [{ data: [12,18,25,22], backgroundColor: ['#4ade80','#00d4ff','#fbbf24','#f87171'], borderWidth: 0 }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } } }, cutout: '50%' });
-            new Chart('pc6', { type: 'bar', data: { labels: ['21','22','23','24','25','26','27'], datasets: [{ data: [8,12,10,15,11,13,23], backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 3, barPercentage: 0.5 }] }, options: co });
-            new Chart('pc7', { type: 'doughnut', data: { labels: ['混料','外观','装配','尺寸','电气'], datasets: [{ data: [31,22,18,15,12], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderWidth: 0 }] }, options: { ...co, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10, weight: '600' } } } } }, cutout: '55%' });
+            // Incoming charts
+            charts.ic1 = new Chart('ic1', {
+                type: 'line',
+                data: {
+                    labels: Array.from({length:14},(_,i)=>(i+1)+''),
+                    datasets: [{
+                        data: [1.2,1.8,1.5,2.1,1.9,2.5,2.2,1.8,2.0,1.6,1.4,1.7,2.3,2.8],
+                        borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.1)',
+                        fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2
+                    },{
+                        data: Array(14).fill(2),
+                        borderColor: '#f87171', borderDash: [3,3],
+                        pointRadius: 0, borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: false }
+                    }
+                }
+            });
+
+            charts.ic2 = new Chart('ic2', {
+                type: 'doughnut',
+                data: {
+                    labels: ['通止规','外观','尺寸','材质','其他'],
+                    datasets: [{ data: [25,20,18,15,10], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#555'], borderWidth: 0 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10 } } },
+                        datalabels: { ...dlPlugin, anchor: 'center', align: 'center' }
+                    }
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '55%' }
+            });
+
+            charts.ic3 = new Chart('ic3', {
+                type: 'bar',
+                data: {
+                    labels: ['Meizhi','Parts','Mat.','Steel','Elec.'],
+                    datasets: [{ data: [2.5,1.8,1.6,1.2,0.9], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderRadius: 3, barPercentage: 0.5 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                    plugins: { legend: { display: false }, datalabels: { ...dlPlugin, anchor: 'end', align: 'end' } }
+                }
+            });
+
+            charts.ic4 = new Chart('ic4', {
+                type: 'line',
+                data: {
+                    labels: ['W1','W2','W3','W4'],
+                    datasets: [{ data: [97.5,98.2,97.8,97.2], borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: false } },
+                    scales: { y: { min: 95, max: 100 }, x: { grid: { display: false } } }
+                }
+            });
+
+            charts.ic5 = new Chart('ic5', {
+                type: 'bar',
+                data: {
+                    labels: ['21','22','23','24','25','26','27'],
+                    datasets: [
+                        { data: [10,12,11,13,10,11,9], backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 2, barPercentage: 0.6 },
+                        { data: [1,2,1,2,2,2,3], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 2, barPercentage: 0.6 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { ...dlPlugin, anchor: 'end', align: 'top' } },
+                    scales: { y: { beginAtZero: true, stacked: true }, x: { stacked: true, grid: { display: false } } }
+                }
+            });
+
+            charts.ic6 = new Chart('ic6', {
+                type: 'polarArea',
+                data: {
+                    labels: ['尺寸','外观','通止','材质','绝缘'],
+                    datasets: [{ data: [28,22,18,12,8], backgroundColor: ['rgba(0,212,255,0.6)','rgba(251,191,36,0.6)','rgba(248,113,113,0.6)','rgba(167,139,250,0.6)','rgba(74,222,128,0.6)'] }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10 } } },
+                        datalabels: { ...dlPlugin, anchor: 'center', align: 'center' }
+                    }
+                }
+            });
+
+            // Process charts
+            charts.pc1 = new Chart('pc1', {
+                type: 'line',
+                data: {
+                    labels: ['21','22','23','24','25','26','27'],
+                    datasets: [{
+                        data: [8,12,10,15,11,13,23],
+                        borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)',
+                        fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2
+                    },{
+                        data: [0.4,0.6,0.5,0.7,0.5,0.6,0.8],
+                        borderColor: '#fbbf24', tension: 0.4, pointRadius: 3, borderWidth: 2, yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: false } },
+                    scales: { y: { beginAtZero: true, position: 'left' }, y1: { beginAtZero: true, position: 'right', grid: { display: false } }, x: { grid: { display: false } } }
+                }
+            });
+
+            charts.pc2 = new Chart('pc2', {
+                type: 'bar',
+                data: {
+                    labels: ['混料','外观','装配','尺寸','电气'],
+                    datasets: [{ data: [31,22,18,15,12], backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 3, barPercentage: 0.5 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { ...dlPlugin, anchor: 'end', align: 'top' } }
+                }
+            });
+
+            charts.pc3 = new Chart('pc3', {
+                type: 'bar',
+                data: {
+                    labels: ['A','B','C','D'],
+                    datasets: [{ data: [18,25,22,14], backgroundColor: ['#00d4ff','#a78bfa','#fbbf24','#4ade80'], borderRadius: 3, barPercentage: 0.5 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { ...dlPlugin, anchor: 'end', align: 'top' } }
+                }
+            });
+
+            charts.pc4 = new Chart('pc4', {
+                type: 'radar',
+                data: {
+                    labels: ['A','B','C','D'],
+                    datasets: [{ data: [0.7,0.9,0.8,0.5], borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.15)', pointBackgroundColor: '#00d4ff', pointRadius: 3 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: false } },
+                    scales: { r: { beginAtZero: true, ticks: { display: false }, pointLabels: { color: '#fff', font: { size: 11 } } } }
+                }
+            });
+
+            charts.pc5 = new Chart('pc5', {
+                type: 'doughnut',
+                data: {
+                    labels: ['8-10','10-12','13-15','15-17'],
+                    datasets: [{ data: [12,18,25,22], backgroundColor: ['#4ade80','#00d4ff','#fbbf24','#f87171'], borderWidth: 0 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '50%',
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10 } } },
+                        datalabels: { ...dlPlugin, anchor: 'center', align: 'center' }
+                    }
+                }
+            });
+
+            charts.pc6 = new Chart('pc6', {
+                type: 'bar',
+                data: {
+                    labels: ['21','22','23','24','25','26','27'],
+                    datasets: [{ data: [8,12,10,15,11,13,23], backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 3, barPercentage: 0.5 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { ...dlPlugin, anchor: 'end', align: 'top' } }
+                }
+            });
+
+            charts.pc7 = new Chart('pc7', {
+                type: 'doughnut',
+                data: {
+                    labels: ['混料','外观','装配','尺寸','电气'],
+                    datasets: [{ data: [31,22,18,15,12], backgroundColor: ['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderWidth: 0 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '55%',
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#fff', boxWidth: 8, padding: 4, font: { size: 10 } } },
+                        datalabels: { ...dlPlugin, anchor: 'center', align: 'center' }
+                    }
+                }
+            });
         }
 
         // Filters
