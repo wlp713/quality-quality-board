@@ -64,6 +64,7 @@
         .chart-box.wide { grid-column: span 2; }
         .chart-box h4 { font-size: 13px; font-weight: 700; color: #ffffff; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .chart-wrap { flex: 1; position: relative; min-height: 0; }
+        .chart-wrap canvas { cursor: pointer; }
 
         .rank-list { flex: 1; overflow-y: auto; }
         .rank-list::-webkit-scrollbar { width: 3px; }
@@ -346,7 +347,51 @@
         // Column filter
         function filterCol(type, col, value) {
             colFilters[type][col] = value;
+            // Update filter input value
+            const page = type === 'i' ? 'page-incoming' : 'page-process';
+            const thIndex = { i: {supplier:0,product:1,model:2,reason:3,qty:4,rate:5,status:6}, p: {time:0,line:1,model:2,partNo:3,reason:4,qty:5,rate:6,status:7} };
+            if (thIndex[type][col] !== undefined) {
+                const th = document.querySelectorAll('#' + page + ' .data-table th')[thIndex[type][col]];
+                const input = th?.querySelector('.th-filter input, .th-filter select');
+                if (input) input.value = value;
+            }
             renderTables();
+        }
+
+        // Chart click -> table filter
+        function chartClickFilter(chartId, clickedLabel, filterCol_name) {
+            const type = chartId.startsWith('i') ? 'i' : 'p';
+            const page = type === 'i' ? 'page-incoming' : 'page-process';
+            
+            // Clear other filters for this column, set new one
+            colFilters[type][filterCol_name] = clickedLabel;
+            
+            // Update filter input
+            const thIndex = { i: {supplier:0,product:1,model:2,reason:3,qty:4,rate:5,status:6}, p: {time:0,line:1,model:2,partNo:3,reason:4,qty:5,rate:6,status:7} };
+            if (thIndex[type][filterCol_name] !== undefined) {
+                const th = document.querySelectorAll('#' + page + ' .data-table th')[thIndex[type][filterCol_name]];
+                const input = th?.querySelector('.th-filter input, .th-filter select');
+                if (input) input.value = clickedLabel;
+            }
+            
+            // Switch to correct tab if needed
+            if ((type === 'i' && currentTab !== 'incoming') || (type === 'p' && currentTab !== 'process')) {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.querySelector(`.tab[data-tab="${type === 'i' ? 'incoming' : 'process'}"]`).classList.add('active');
+                document.getElementById('page-' + (type === 'i' ? 'incoming' : 'process')).classList.add('active');
+                currentTab = type === 'i' ? 'incoming' : 'process';
+            }
+            
+            renderTables();
+            
+            // Scroll to table
+            setTimeout(() => {
+                const tableSection = document.querySelector('#page-' + (type === 'i' ? 'incoming' : 'process') + ' .table-section');
+                if (tableSection) tableSection.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+            
+            showToast('已筛选: ' + clickedLabel);
         }
 
         // i18n
@@ -538,20 +583,44 @@
         const dlPlugin = { display: true, color: '#fff', font: { size: 9, weight: '600' }, formatter: Math.round };
 
         function initCharts() {
+            // ic1: NG rate trend (no click filter - it's a trend chart)
             charts.ic1 = new Chart('ic1', { type:'line', data:{ labels:[], datasets:[{ data:[], borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.1)', fill:true, tension:0.4, pointRadius:3, borderWidth:2 },{ data:[], borderColor:'#f87171', borderDash:[3,3], pointRadius:0, borderWidth:1 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{display:false} } } });
-            charts.ic2 = new Chart('ic2', { type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:['#f87171','#fbbf24','#00d4ff','#a78bfa','#555','#4ade80'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'45%', plugins:{ legend:{display:false}, datalabels:{ display:true, color:'#fff', font:{size:10,weight:'700'}, formatter:function(v,ctx){ return ctx.chart.data.labels[ctx.dataIndex]+'\n'+v; }, textAlign:'center' } } } });
-            charts.ic3 = new Chart('ic3', { type:'bar', data:{ labels:[], datasets:[{ data:[], backgroundColor:['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80','#fb923c'], borderRadius:3, barPercentage:0.5 }] }, options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{ legend:{display:false}, datalabels:{...dlPlugin, anchor:'end', align:'end'} } } });
+            
+            // ic2: NG reason dist - click to filter
+            charts.ic2 = new Chart('ic2', { type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:['#f87171','#fbbf24','#00d4ff','#a78bfa','#555','#4ade80'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'45%', onClick:(e, els) => { if(els.length>0) chartClickFilter('ic2', charts.ic2.data.labels[els[0].index], 'reason'); }, plugins:{ legend:{display:false}, datalabels:{ display:true, color:'#fff', font:{size:10,weight:'700'}, formatter:function(v,ctx){ return ctx.chart.data.labels[ctx.dataIndex]+'\n'+v; }, textAlign:'center' } } } });
+            
+            // ic3: Supplier NG rate - click to filter
+            charts.ic3 = new Chart('ic3', { type:'bar', data:{ labels:[], datasets:[{ data:[], backgroundColor:['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80','#fb923c'], borderRadius:3, barPercentage:0.5 }] }, options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y', onClick:(e, els) => { if(els.length>0) chartClickFilter('ic3', charts.ic3.data.labels[els[0].index], 'supplier'); }, plugins:{ legend:{display:false}, datalabels:{...dlPlugin, anchor:'end', align:'end'} } } });
+            
+            // ic4: Pass rate trend (no click filter)
             charts.ic4 = new Chart('ic4', { type:'line', data:{ labels:[], datasets:[{ data:[], borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,0.1)', fill:true, tension:0.3, pointRadius:3, borderWidth:2 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{display:false} } } });
+            
+            // ic5: Daily batch stats (no click filter)
             charts.ic5 = new Chart('ic5', { type:'bar', data:{ labels:[], datasets:[{ data:[], backgroundColor:'rgba(74,222,128,0.7)', borderRadius:2, barPercentage:0.6 },{ data:[], backgroundColor:'rgba(248,113,113,0.7)', borderRadius:2, barPercentage:0.6 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{...dlPlugin, anchor:'end', align:'top'} }, scales:{ y:{beginAtZero:true,stacked:true}, x:{stacked:true,grid:{display:false}} } } });
-            charts.ic6 = new Chart('ic6', { type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:['rgba(0,212,255,0.8)','rgba(251,191,36,0.8)','rgba(248,113,113,0.8)','rgba(167,139,250,0.8)','rgba(74,222,128,0.8)'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'45%', plugins:{ legend:{display:false}, datalabels:{ display:true, color:'#fff', font:{size:10,weight:'700'}, formatter:function(v,ctx){ return ctx.chart.data.labels[ctx.dataIndex]+'\n'+v; }, textAlign:'center' } } } });
+            
+            // ic6: NG type dist - click to filter
+            charts.ic6 = new Chart('ic6', { type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:['rgba(0,212,255,0.8)','rgba(251,191,36,0.8)','rgba(248,113,113,0.8)','rgba(167,139,250,0.8)','rgba(74,222,128,0.8)'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'45%', onClick:(e, els) => { if(els.length>0) chartClickFilter('ic6', charts.ic6.data.labels[els[0].index], 'reason'); }, plugins:{ legend:{display:false}, datalabels:{ display:true, color:'#fff', font:{size:10,weight:'700'}, formatter:function(v,ctx){ return ctx.chart.data.labels[ctx.dataIndex]+'\n'+v; }, textAlign:'center' } } } });
 
+            // pc1: NG trend (no click filter)
             charts.pc1 = new Chart('pc1', { type:'line', data:{ labels:[], datasets:[{ data:[], borderColor:'#f87171', backgroundColor:'rgba(248,113,113,0.1)', fill:true, tension:0.4, pointRadius:3, borderWidth:2 },{ data:[], borderColor:'#fbbf24', tension:0.4, pointRadius:3, borderWidth:2, yAxisID:'y1' }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{display:false} }, scales:{ y:{beginAtZero:true,position:'left'}, y1:{beginAtZero:true,position:'right',grid:{display:false}}, x:{grid:{display:false}} } } });
-            charts.pc2 = new Chart('pc2', { type:'bar', data:{ labels:[], datasets:[{ data:[], backgroundColor:'rgba(248,113,113,0.7)', borderRadius:3, barPercentage:0.5 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{...dlPlugin, anchor:'end', align:'top'} } } });
-            charts.pc3 = new Chart('pc3', { type:'bar', data:{ labels:[], datasets:[{ data:[], backgroundColor:['#00d4ff','#a78bfa','#fbbf24','#4ade80'], borderRadius:3, barPercentage:0.5 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{...dlPlugin, anchor:'end', align:'top'} } } });
-            charts.pc4 = new Chart('pc4', { type:'radar', data:{ labels:[], datasets:[{ data:[], borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.15)', pointBackgroundColor:'#00d4ff', pointRadius:3 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{display:false} }, scales:{ r:{beginAtZero:true, ticks:{display:false}, pointLabels:{color:'#fff',font:{size:11}}} } } });
+            
+            // pc2: Pareto - click to filter
+            charts.pc2 = new Chart('pc2', { type:'bar', data:{ labels:[], datasets:[{ data:[], backgroundColor:'rgba(248,113,113,0.7)', borderRadius:3, barPercentage:0.5 }] }, options:{ responsive:true, maintainAspectRatio:false, onClick:(e, els) => { if(els.length>0) chartClickFilter('pc2', charts.pc2.data.labels[els[0].index], 'reason'); }, plugins:{ legend:{display:false}, datalabels:{...dlPlugin, anchor:'end', align:'top'} } } });
+            
+            // pc3: Line compare - click to filter
+            charts.pc3 = new Chart('pc3', { type:'bar', data:{ labels:[], datasets:[{ data:[], backgroundColor:['#00d4ff','#a78bfa','#fbbf24','#4ade80'], borderRadius:3, barPercentage:0.5 }] }, options:{ responsive:true, maintainAspectRatio:false, onClick:(e, els) => { if(els.length>0) chartClickFilter('pc3', charts.pc3.data.labels[els[0].index], 'line'); }, plugins:{ legend:{display:false}, datalabels:{...dlPlugin, anchor:'end', align:'top'} } } });
+            
+            // pc4: Line NG rate - click to filter
+            charts.pc4 = new Chart('pc4', { type:'radar', data:{ labels:[], datasets:[{ data:[], borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.15)', pointBackgroundColor:'#00d4ff', pointRadius:3 }] }, options:{ responsive:true, maintainAspectRatio:false, onClick:(e, els) => { if(els.length>0) chartClickFilter('pc4', charts.pc4.data.labels[els[0].index], 'line'); }, plugins:{ legend:{display:false}, datalabels:{display:false} }, scales:{ r:{beginAtZero:true, ticks:{display:false}, pointLabels:{color:'#fff',font:{size:11}}} } } });
+            
+            // pc5: Time distribution (no click filter - time slots are complex)
             charts.pc5 = new Chart('pc5', { type:'doughnut', data:{ labels:['8-10','10-12','13-15','15-17'], datasets:[{ data:[0,0,0,0], backgroundColor:['#4ade80','#00d4ff','#fbbf24','#f87171'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'45%', plugins:{ legend:{display:false}, datalabels:{ display:true, color:'#fff', font:{size:10,weight:'700'}, formatter:function(v,ctx){ return ctx.chart.data.labels[ctx.dataIndex]+'\n'+v; }, textAlign:'center' } } } });
+            
+            // pc6: Daily NG count (no click filter)
             charts.pc6 = new Chart('pc6', { type:'bar', data:{ labels:[], datasets:[{ data:[], backgroundColor:'rgba(167,139,250,0.7)', borderRadius:3, barPercentage:0.5 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{...dlPlugin, anchor:'end', align:'top'} } } });
-            charts.pc7 = new Chart('pc7', { type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'45%', plugins:{ legend:{display:false}, datalabels:{ display:true, color:'#fff', font:{size:10,weight:'700'}, formatter:function(v,ctx){ return ctx.chart.data.labels[ctx.dataIndex]+'\n'+v; }, textAlign:'center' } } } });
+            
+            // pc7: NG type dist - click to filter
+            charts.pc7 = new Chart('pc7', { type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:['#f87171','#fbbf24','#00d4ff','#a78bfa','#4ade80'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'45%', onClick:(e, els) => { if(els.length>0) chartClickFilter('pc7', charts.pc7.data.labels[els[0].index], 'reason'); }, plugins:{ legend:{display:false}, datalabels:{ display:true, color:'#fff', font:{size:10,weight:'700'}, formatter:function(v,ctx){ return ctx.chart.data.labels[ctx.dataIndex]+'\n'+v; }, textAlign:'center' } } } });
         }
 
         function updateCharts() {
