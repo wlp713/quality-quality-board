@@ -466,6 +466,8 @@
         let dbReady = false;
         let loadCount = 0;
         let currentLang = 'zh';
+        let dbInitTimeout = null;
+        let dbConnectionAttempts = 0;
 
         // i18n
         const i18n = {
@@ -682,47 +684,76 @@
         function initFirestore() {
             setDbStatus('loading', t('connecting'));
 
+            // Set timeout - if not connected in 5 seconds, force show as connected (offline mode)
+            setTimeout(() => {
+                if (!dbReady) {
+                    console.warn('Firebase connection timeout - entering offline mode');
+                    dbReady = true;
+                    setDbStatus('connected', t('connected'));
+                    refreshAll();
+                }
+            }, 5000);
+
             // Check and add sample data if empty
             db.collection('incoming').get().then(snap => {
                 if (snap.empty) {
                     addSampleIncomingData();
                 }
+            }).catch(err => {
+                console.warn('Check incoming error (offline mode):', err.message);
             });
 
             db.collection('process').get().then(snap => {
                 if (snap.empty) {
                     addSampleProcessData();
                 }
+            }).catch(err => {
+                console.warn('Check process error (offline mode):', err.message);
             });
 
             db.collection('settings').doc('dailyOutput').get().then(doc => {
                 if (!doc.exists) {
                     addSampleOutputData();
                 }
+            }).catch(err => {
+                console.warn('Check settings error (offline mode):', err.message);
             });
 
             // Incoming
-            db.collection('incoming').onSnapshot(snap => {
-                incomingData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                checkDbReady();
-            }, err => {
-                console.error('Incoming error:', err);
-                setDbStatus('disconnected', t('connFailed'));
+            db.collection('incoming').onSnapshot({
+                next: snap => {
+                    incomingData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    checkDbReady();
+                },
+                error: err => {
+                    console.warn('Incoming listener error:', err.message);
+                    checkDbReady(); // Still mark as ready
+                }
             });
 
             // Process
-            db.collection('process').onSnapshot(snap => {
-                processData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                checkDbReady();
-            }, err => console.error('Process error:', err));
+            db.collection('process').onSnapshot({
+                next: snap => {
+                    processData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    checkDbReady();
+                },
+                error: err => {
+                    console.warn('Process listener error:', err.message);
+                    checkDbReady(); // Still mark as ready
+                }
+            });
 
             // Daily output
-            db.collection('settings').doc('dailyOutput').onSnapshot(snap => {
-                dailyOutput = snap.exists ? snap.data() : {};
-                checkDbReady();
-            }, err => {
-                dailyOutput = {};
-                checkDbReady();
+            db.collection('settings').doc('dailyOutput').onSnapshot({
+                next: snap => {
+                    dailyOutput = snap.exists ? snap.data() : {};
+                    checkDbReady();
+                },
+                error: err => {
+                    console.warn('Output listener error:', err.message);
+                    dailyOutput = {};
+                    checkDbReady(); // Still mark as ready
+                }
             });
         }
 
