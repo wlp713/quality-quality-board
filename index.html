@@ -47,6 +47,23 @@
 
         .header-right { display: flex; align-items: center; gap: 10px; }
 
+        .lang-btn {
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            background: rgba(0,212,255,0.15);
+            border-color: #00d4ff;
+        }
+
         .db-status { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
         .db-status.connected { background: rgba(74,222,128,0.2); color: #4ade80; }
         .db-status.disconnected { background: rgba(248,113,113,0.2); color: #f87171; }
@@ -113,9 +130,9 @@
             text-align: center;
         }
 
-        .kpi .label { font-size: 9px; color: #888888; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; }
+        .kpi .label { font-size: 11px; color: #888888; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; }
         .kpi .value { font-size: 24px; font-weight: 800; margin: 4px 0; }
-        .kpi .sub { font-size: 9px; color: #666666; font-weight: 500; }
+        .kpi .sub { font-size: 10px; color: #666666; font-weight: 500; }
 
         .kpi.c1 .value { color: #00d4ff; }
         .kpi.c2 .value { color: #4ade80; }
@@ -317,8 +334,9 @@
 <body>
     <div class="app">
         <div class="header">
-            <h1>品质看板系统</h1>
+            <h1 data-i18n="title">品质看板系统</h1>
             <div class="header-right">
+                <button class="lang-btn" id="langBtn" onclick="toggleLang()">EN</button>
                 <span class="db-status loading" id="dbStatus">初始化...</span>
                 <input type="date" class="date-picker" id="datePicker">
             </div>
@@ -447,6 +465,207 @@
         let dailyOutput = {};
         let dbReady = false;
         let loadCount = 0;
+        let currentLang = 'zh';
+
+        // i18n
+        const i18n = {
+            zh: {
+                title: '品质看板系统',
+                incoming: '来料品质',
+                process: '过程品质',
+                todayBatch: '今日批次',
+                passBatch: '合格批次',
+                ngBatch: '不良批次',
+                ngRate: '不良率',
+                pending: '待处理',
+                supplier: '供应商',
+                todayOutput: '今日产量',
+                ngCount: '不良数',
+                passRate: '合格率',
+                topReason: '高频原因',
+                total: '来料总数',
+                passRateSub: '合格率',
+                ngCountSub: '不良数',
+                target: '目标 ≤2%',
+                needFollow: '需跟进',
+                active: '活跃中',
+                clickEdit: '点击编辑',
+                autoSum: '自动汇总',
+                autoCalc: '自动计算',
+                topShare: '占比最高',
+                ngTrend14: '不良率趋势（近14天）',
+                ngReasonDist: '不良原因分布',
+                supplierTop: '供应商不良TOP',
+                supplierRate: '供应商不良率',
+                passTrend: '合格率趋势',
+                batchStats: '每日批次统计',
+                ngTypeDist: '不良类型分布',
+                ngTrend7: '不良趋势（近7天）',
+                pareto: '不良原因帕累托',
+                lineCompare: '产线不良对比',
+                lineRate: '产线不良率',
+                timeDist: '不良时段分布',
+                dailyNg: '每日不良数',
+                scrollHint: '↓ 向下滑动查看明细 ↓',
+                detail: '明细',
+                search: '搜索...',
+                allStatus: '全部状态',
+                statusPending: '待处理',
+                statusProcessing: '处理中',
+                statusResolved: '已闭环',
+                supplierCol: '供应商',
+                product: '产品',
+                model: '型号',
+                reason: '不良原因',
+                qty: '数量',
+                time: '时间',
+                line: '产线',
+                partNo: '零件号',
+                status: '状态',
+                connected: '已连接',
+                connecting: '连接中...',
+                init: '初始化...',
+                connFailed: '连接失败',
+                saved: '产量已保存',
+                saveFailed: '保存失败',
+                statusUpdated: '状态已更新',
+                updateFailed: '更新失败'
+            },
+            en: {
+                title: 'QMS Board',
+                incoming: 'Incoming',
+                process: 'Process',
+                todayBatch: 'Today Batch',
+                passBatch: 'Pass Batch',
+                ngBatch: 'NG Batch',
+                ngRate: 'NG Rate',
+                pending: 'Pending',
+                supplier: 'Supplier',
+                todayOutput: 'Output',
+                ngCount: 'NG Count',
+                passRate: 'Pass Rate',
+                topReason: 'Top Reason',
+                total: 'Total',
+                passRateSub: 'Pass Rate',
+                ngCountSub: 'NG Count',
+                target: 'Target ≤2%',
+                needFollow: 'Need Follow',
+                active: 'Active',
+                clickEdit: 'Click to Edit',
+                autoSum: 'Auto Sum',
+                autoCalc: 'Auto Calc',
+                topShare: 'Top Share',
+                ngTrend14: 'NG Rate Trend (14 Days)',
+                ngReasonDist: 'NG Reason Distribution',
+                supplierTop: 'Supplier NG TOP',
+                supplierRate: 'Supplier NG Rate',
+                passTrend: 'Pass Rate Trend',
+                batchStats: 'Daily Batch Stats',
+                ngTypeDist: 'NG Type Distribution',
+                ngTrend7: 'NG Trend (7 Days)',
+                pareto: 'NG Reason Pareto',
+                lineCompare: 'Line NG Compare',
+                lineRate: 'Line NG Rate',
+                timeDist: 'NG Time Distribution',
+                dailyNg: 'Daily NG Count',
+                scrollHint: '↓ Scroll for Details ↓',
+                detail: 'Details',
+                search: 'Search...',
+                allStatus: 'All Status',
+                statusPending: 'Pending',
+                statusProcessing: 'Processing',
+                statusResolved: 'Resolved',
+                supplierCol: 'Supplier',
+                product: 'Product',
+                model: 'Model',
+                reason: 'Reason',
+                qty: 'Qty',
+                time: 'Time',
+                line: 'Line',
+                partNo: 'Part No.',
+                status: 'Status',
+                connected: 'Connected',
+                connecting: 'Connecting...',
+                init: 'Initializing...',
+                connFailed: 'Failed',
+                saved: 'Output Saved',
+                saveFailed: 'Save Failed',
+                statusUpdated: 'Status Updated',
+                updateFailed: 'Update Failed'
+            }
+        };
+
+        function t(key) { return i18n[currentLang][key] || key; }
+
+        function toggleLang() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            document.getElementById('langBtn').textContent = currentLang === 'zh' ? 'EN' : '中';
+            applyI18n();
+        }
+
+        function applyI18n() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[currentLang][key]) el.textContent = i18n[currentLang][key];
+            });
+            
+            // Tabs
+            document.querySelector('.tab[data-tab="incoming"]').textContent = t('incoming');
+            document.querySelector('.tab[data-tab="process"]').textContent = t('process');
+            
+            // KPI labels
+            const kpiLabels = document.querySelectorAll('.kpi .label');
+            const labelKeys = ['todayBatch', 'passBatch', 'ngBatch', 'ngRate', 'pending', 'supplier',
+                              'todayOutput', 'ngCount', 'ngRate', 'passRate', 'topReason', 'pending'];
+            kpiLabels.forEach((el, i) => { if (labelKeys[i]) el.textContent = t(labelKeys[i]); });
+            
+            // KPI subs
+            const kpiSubs = document.querySelectorAll('.kpi .sub');
+            const subKeys = ['total', 'passRateSub', 'ngCountSub', 'target', 'needFollow', 'active',
+                            'clickEdit', 'autoSum', 'autoCalc', 'autoCalc', 'topShare', 'needFollow'];
+            kpiSubs.forEach((el, i) => { if (subKeys[i]) el.textContent = t(subKeys[i]); });
+            
+            // Chart titles
+            const chartTitles = document.querySelectorAll('.chart-box h4');
+            const chartKeys = currentTab === 'incoming' 
+                ? ['ngTrend14', 'ngReasonDist', 'supplierTop', 'supplierRate', 'passTrend', 'batchStats', 'ngTypeDist']
+                : ['ngTrend7', 'pareto', 'lineCompare', 'lineRate', 'timeDist', 'dailyNg', 'ngTypeDist'];
+            chartTitles.forEach((el, i) => { if (chartKeys[i]) el.textContent = t(chartKeys[i]); });
+            
+            // Scroll hint
+            document.querySelectorAll('.scroll-hint span').forEach(el => el.textContent = t('scrollHint'));
+            
+            // Table headers
+            const iHeaders = document.querySelectorAll('#page-incoming .data-table th');
+            const iHeaderKeys = ['supplierCol', 'product', 'model', 'reason', 'qty', 'ngRate', 'status'];
+            iHeaders.forEach((el, i) => { if (iHeaderKeys[i]) el.textContent = t(iHeaderKeys[i]); });
+            
+            const pHeaders = document.querySelectorAll('#page-process .data-table th');
+            const pHeaderKeys = ['time', 'line', 'model', 'partNo', 'reason', 'qty', 'ngRate', 'status'];
+            pHeaders.forEach((el, i) => { if (pHeaderKeys[i]) el.textContent = t(pHeaderKeys[i]); });
+            
+            // Table titles
+            document.querySelector('#page-incoming .table-header h3').textContent = t('incoming') + ' ' + t('detail');
+            document.querySelector('#page-process .table-header h3').textContent = t('process') + ' ' + t('detail');
+            
+            // Filter placeholders
+            document.getElementById('i-search').placeholder = t('search');
+            document.getElementById('p-search').placeholder = t('search');
+            
+            // Status options
+            document.querySelectorAll('#i-status option, #p-status option').forEach(opt => {
+                if (opt.value === '') opt.textContent = t('allStatus');
+                else if (opt.value === 'pending') opt.textContent = t('statusPending');
+                else if (opt.value === 'processing') opt.textContent = t('statusProcessing');
+                else if (opt.value === 'resolved') opt.textContent = t('statusResolved');
+            });
+            
+            // DB status
+            const dbStatus = document.getElementById('dbStatus');
+            if (dbStatus.classList.contains('connected')) dbStatus.textContent = t('connected');
+            else if (dbStatus.classList.contains('loading')) dbStatus.textContent = t('connecting');
+            else if (dbStatus.classList.contains('disconnected')) dbStatus.textContent = t('connFailed');
+        }
 
         const dbStatusEl = document.getElementById('dbStatus');
 
@@ -461,7 +680,7 @@
 
         // Firestore
         function initFirestore() {
-            setDbStatus('loading', '连接中...');
+            setDbStatus('loading', t('connecting'));
 
             // Incoming
             db.collection('incoming').onSnapshot(snap => {
@@ -469,7 +688,7 @@
                 checkDbReady();
             }, err => {
                 console.error('Incoming error:', err);
-                setDbStatus('disconnected', '连接失败');
+                setDbStatus('disconnected', t('connFailed'));
             });
 
             // Process
@@ -493,7 +712,7 @@
             loadCount++;
             if (loadCount >= 3 && !dbReady) {
                 dbReady = true;
-                setDbStatus('connected', '已连接');
+                setDbStatus('connected', t('connected'));
             }
             refreshAll();
         }
@@ -526,9 +745,9 @@
                 await db.collection('settings').doc('dailyOutput').set({
                     [currentDate]: val
                 }, { merge: true });
-                showToast('产量已保存: ' + val.toLocaleString());
+                showToast(t('saved') + ': ' + val.toLocaleString());
             } catch (e) {
-                showToast('保存失败', true);
+                showToast(t('saveFailed'), true);
             }
             
             kpi.classList.remove('editing');
@@ -559,6 +778,7 @@
                 document.getElementById('page-' + currentTab).classList.add('active');
                 document.getElementById('page-' + currentTab).scrollTop = 0;
                 document.querySelectorAll('.scroll-hint').forEach(h => h.classList.remove('hidden'));
+                applyI18n();
             });
         });
 
@@ -626,9 +846,9 @@
         async function updateStatus(type, id, status) {
             try {
                 await db.collection(type).doc(id).update({ status });
-                showToast('状态已更新');
+                showToast(t('statusUpdated'));
             } catch (e) {
-                showToast('更新失败', true);
+                showToast(t('updateFailed'), true);
             }
         }
 
@@ -885,6 +1105,7 @@
 
         initCharts();
         initFirestore();
+        applyI18n();
     </script>
 </body>
 </html>
