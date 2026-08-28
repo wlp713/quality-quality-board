@@ -12,17 +12,22 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
             color: #e4e4e4;
         }
 
         .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 12px 20px;
         }
 
         /* Header */
@@ -30,16 +35,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 30px;
+            padding: 10px 20px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            margin-bottom: 20px;
+            border-radius: 12px;
+            margin-bottom: 10px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
         }
 
         .header h1 {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 700;
             background: linear-gradient(90deg, #00d4ff, #7c3aed);
             -webkit-background-clip: text;
@@ -47,24 +53,25 @@
         }
 
         .header .datetime {
-            font-size: 14px;
+            font-size: 13px;
             color: #888;
         }
 
         /* Tabs */
         .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
         }
 
         .tab {
-            padding: 14px 32px;
+            padding: 10px 24px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
             transition: all 0.3s ease;
             color: #aaa;
@@ -79,116 +86,216 @@
             background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
             color: #fff;
             border-color: transparent;
-            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
         }
 
-        /* Page content */
+        /* Page content - scrollable container */
         .page-content {
             display: none;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
         }
 
         .page-content.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Stats Cards */
+        /* Scroll wrapper */
+        .scroll-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .scroll-wrapper::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scroll-wrapper::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .scroll-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.4);
+            border-radius: 3px;
+        }
+
+        /* Screen sections */
+        .screen {
+            min-height: calc(100vh - 120px);
+            padding: 0 0 20px 0;
+        }
+
+        /* Stats Cards - Compact */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
         }
 
         .stat-card {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 14px 16px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            transition: transform 0.2s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
         }
 
         .stat-card .label {
-            font-size: 13px;
+            font-size: 11px;
             color: #888;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .stat-card .value {
-            font-size: 32px;
+            font-size: 26px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         .stat-card .trend {
-            font-size: 13px;
+            font-size: 11px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
 
-        .stat-card .trend.up {
-            color: #ef4444;
-        }
-
-        .stat-card .trend.down {
-            color: #22c55e;
-        }
+        .stat-card .trend.up { color: #ef4444; }
+        .stat-card .trend.down { color: #22c55e; }
 
         .stat-card.accent-blue .value { color: #00d4ff; }
         .stat-card.accent-purple .value { color: #a78bfa; }
         .stat-card.accent-red .value { color: #f87171; }
         .stat-card.accent-green .value { color: #4ade80; }
         .stat-card.accent-yellow .value { color: #fbbf24; }
-        .stat-card.accent-orange .value { color: #fb923c; }
 
-        /* Charts Grid */
+        /* Charts Grid - Compact for single screen */
         .charts-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 0;
         }
 
         .chart-card {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 14px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
         }
 
         .chart-card h3 {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 600;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
             color: #ddd;
         }
 
         .chart-container {
             position: relative;
-            height: 280px;
+            height: 180px;
         }
 
-        /* Secondary charts row */
-        .charts-row-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
+        /* Supplier ranking compact */
+        .ranking-list {
+            list-style: none;
         }
 
-        /* Data Table */
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+        }
+
+        .ranking-item:last-child { border-bottom: none; }
+
+        .ranking-item .rank {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+
+        .ranking-item .rank-1 { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .ranking-item .rank-2 { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .ranking-item .rank-3 { background: rgba(0, 212, 255, 0.2); color: #00d4ff; }
+        .ranking-item .rank-other { background: rgba(255, 255, 255, 0.1); color: #888; }
+
+        .ranking-item .name { flex: 1; }
+        .ranking-item .count { font-weight: 600; color: #f87171; }
+
+        /* Scroll hint */
+        .scroll-hint {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 12px;
+            background: linear-gradient(to top, rgba(26, 26, 46, 0.95), transparent);
+            cursor: pointer;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+
+        .scroll-hint.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .scroll-hint-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: rgba(0, 212, 255, 0.15);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            font-size: 13px;
+            color: #00d4ff;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-5px); }
+            60% { transform: translateY(-3px); }
+        }
+
+        .scroll-hint-arrow {
+            font-size: 16px;
+            animation: arrowBounce 1.5s infinite;
+        }
+
+        @keyframes arrowBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(4px); }
+        }
+
+        /* Data Table Section */
+        .table-section {
+            padding-top: 20px;
+        }
+
         .table-card {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 16px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
         }
@@ -197,27 +304,27 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .table-header h3 {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             color: #ddd;
         }
 
         .table-filters {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .filter-input {
-            padding: 8px 14px;
+            padding: 6px 12px;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
+            border-radius: 6px;
             color: #e4e4e4;
-            font-size: 13px;
+            font-size: 12px;
             outline: none;
             transition: border-color 0.2s;
         }
@@ -233,18 +340,21 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .data-table thead th {
-            padding: 12px 16px;
+            padding: 10px 12px;
             text-align: left;
             font-weight: 600;
             color: #888;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background: rgba(22, 33, 62, 0.95);
         }
 
         .data-table tbody tr {
@@ -257,65 +367,36 @@
         }
 
         .data-table tbody td {
-            padding: 14px 16px;
+            padding: 10px 12px;
             color: #ccc;
             vertical-align: middle;
         }
 
         .badge {
             display: inline-block;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
         }
 
-        .badge-danger {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-        }
+        .badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .badge-warning { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .badge-success { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        .badge-info { background: rgba(0, 212, 255, 0.15); color: #00d4ff; }
 
-        .badge-warning {
-            background: rgba(251, 191, 36, 0.15);
-            color: #fbbf24;
-        }
+        .ng-rate-high { color: #f87171; font-weight: 600; }
+        .ng-rate-medium { color: #fbbf24; font-weight: 600; }
+        .ng-rate-low { color: #4ade80; font-weight: 600; }
 
-        .badge-success {
-            background: rgba(34, 197, 94, 0.15);
-            color: #4ade80;
-        }
-
-        .badge-info {
-            background: rgba(0, 212, 255, 0.15);
-            color: #00d4ff;
-        }
-
-        .ng-rate-high {
-            color: #f87171;
-            font-weight: 600;
-        }
-
-        .ng-rate-medium {
-            color: #fbbf24;
-            font-weight: 600;
-        }
-
-        .ng-rate-low {
-            color: #4ade80;
-            font-weight: 600;
-        }
-
-        /* Scrollable table */
         .table-scroll {
-            overflow-x: auto;
-            max-height: 400px;
+            max-height: calc(100vh - 280px);
             overflow-y: auto;
         }
 
         .table-scroll::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 5px;
         }
 
         .table-scroll::-webkit-scrollbar-track {
@@ -328,130 +409,46 @@
             border-radius: 3px;
         }
 
-        /* Progress bar */
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .progress-bar .fill {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-
-        /* Supplier ranking */
-        .ranking-list {
-            list-style: none;
-        }
-
-        .ranking-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .ranking-item:last-child {
-            border-bottom: none;
-        }
-
-        .ranking-item .rank {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 700;
-            margin-right: 12px;
-        }
-
-        .ranking-item .rank-1 { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-        .ranking-item .rank-2 { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-        .ranking-item .rank-3 { background: rgba(0, 212, 255, 0.2); color: #00d4ff; }
-        .ranking-item .rank-other { background: rgba(255, 255, 255, 0.1); color: #888; }
-
-        .ranking-item .name {
-            flex: 1;
-            font-size: 14px;
-        }
-
-        .ranking-item .count {
-            font-size: 14px;
-            font-weight: 600;
-            color: #f87171;
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-            .charts-row-2 {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .header {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-        }
-
-        /* Status indicator */
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 6px;
+            margin-right: 5px;
         }
 
         .status-dot.pending { background: #fbbf24; }
         .status-dot.resolved { background: #4ade80; }
         .status-dot.processing { background: #00d4ff; }
 
-        /* Action buttons */
-        .btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
+        /* Back to top button */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, #00d4ff, #7c3aed);
-            color: #fff;
-        }
-
-        .btn-primary:hover {
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
             box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
         }
 
-        .btn-outline {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #ccc;
+        .back-to-top.visible {
+            opacity: 1;
         }
 
-        .btn-outline:hover {
-            border-color: #00d4ff;
-            color: #00d4ff;
+        .back-to-top::after {
+            content: '↑';
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -471,227 +468,242 @@
 
         <!-- 来料品质页面 -->
         <div class="page-content active" id="page-incoming">
-            <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-card accent-blue">
-                    <div class="label">今日来料批次</div>
-                    <div class="value">12</div>
-                    <div class="trend down">↓ 2 较昨日</div>
+            <div class="scroll-wrapper" id="incomingScroll">
+                <!-- Screen 1: Dashboard -->
+                <div class="screen" id="incomingDashboard">
+                    <!-- Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card accent-blue">
+                            <div class="label">今日来料批次</div>
+                            <div class="value">12</div>
+                            <div class="trend down">↓ 2 较昨日</div>
+                        </div>
+                        <div class="stat-card accent-red">
+                            <div class="label">不良批次</div>
+                            <div class="value">3</div>
+                            <div class="trend up">↑ 1 较昨日</div>
+                        </div>
+                        <div class="stat-card accent-yellow">
+                            <div class="label">本月不良率</div>
+                            <div class="value">2.8%</div>
+                            <div class="trend down">↓ 0.3% 较上月</div>
+                        </div>
+                        <div class="stat-card accent-purple">
+                            <div class="label">待处理问题</div>
+                            <div class="value">5</div>
+                            <div class="trend">需跟进</div>
+                        </div>
+                        <div class="stat-card accent-green">
+                            <div class="label">本月合格率</div>
+                            <div class="value">97.2%</div>
+                            <div class="trend down">↑ 0.3% 较上月</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts - Single Row -->
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>📈 来料不良率趋势（近30天）</h3>
+                            <div class="chart-container">
+                                <canvas id="incomingTrendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>🔴 不良原因分布</h3>
+                            <div class="chart-container">
+                                <canvas id="incomingReasonChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>🏭 供应商不良TOP5</h3>
+                            <ul class="ranking-list">
+                                <li class="ranking-item">
+                                    <span class="rank rank-1">1</span>
+                                    <span class="name">Anhui Meizhi</span>
+                                    <span class="count">8次</span>
+                                </li>
+                                <li class="ranking-item">
+                                    <span class="rank rank-2">2</span>
+                                    <span class="name">Shenzhen Parts</span>
+                                    <span class="count">5次</span>
+                                </li>
+                                <li class="ranking-item">
+                                    <span class="rank rank-3">3</span>
+                                    <span class="name">Guangzhou Mat.</span>
+                                    <span class="count">4次</span>
+                                </li>
+                                <li class="ranking-item">
+                                    <span class="rank rank-other">4</span>
+                                    <span class="name">Dongguan Steel</span>
+                                    <span class="count">3次</span>
+                                </li>
+                                <li class="ranking-item">
+                                    <span class="rank rank-other">5</span>
+                                    <span class="name">Jiangsu Elec.</span>
+                                    <span class="count">2次</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card accent-red">
-                    <div class="label">不良批次</div>
-                    <div class="value">3</div>
-                    <div class="trend up">↑ 1 较昨日</div>
-                </div>
-                <div class="stat-card accent-yellow">
-                    <div class="label">本月不良率</div>
-                    <div class="value">2.8%</div>
-                    <div class="trend down">↓ 0.3% 较上月</div>
-                </div>
-                <div class="stat-card accent-purple">
-                    <div class="label">待处理问题</div>
-                    <div class="value">5</div>
-                    <div class="trend">需跟进</div>
-                </div>
-                <div class="stat-card accent-green">
-                    <div class="label">本月合格率</div>
-                    <div class="value">97.2%</div>
-                    <div class="trend down">↑ 0.3% 较上月</div>
+
+                <!-- Screen 2: Data Table -->
+                <div class="table-section">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h3>📋 来料品质明细</h3>
+                            <div class="table-filters">
+                                <input type="text" class="filter-input" placeholder="搜索供应商..." id="incomingSearch">
+                                <select class="filter-input" id="incomingStatusFilter">
+                                    <option value="">全部状态</option>
+                                    <option value="pending">待处理</option>
+                                    <option value="processing">处理中</option>
+                                    <option value="resolved">已关闭</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="data-table" id="incomingTable">
+                                <thead>
+                                    <tr>
+                                        <th>日期</th>
+                                        <th>供应商</th>
+                                        <th>产品</th>
+                                        <th>型号</th>
+                                        <th>不良原因</th>
+                                        <th>数量</th>
+                                        <th>不良率</th>
+                                        <th>发票号</th>
+                                        <th>状态</th>
+                                        <th>对策</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="incomingTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Charts Row 1 -->
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h3>📈 来料不良率趋势（近30天）</h3>
-                    <div class="chart-container">
-                        <canvas id="incomingTrendChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>🏭 供应商不良TOP5</h3>
-                    <ul class="ranking-list">
-                        <li class="ranking-item">
-                            <span class="rank rank-1">1</span>
-                            <span class="name">Anhui Meizhi</span>
-                            <span class="count">8 次</span>
-                        </li>
-                        <li class="ranking-item">
-                            <span class="rank rank-2">2</span>
-                            <span class="name">Shenzhen Parts Co.</span>
-                            <span class="count">5 次</span>
-                        </li>
-                        <li class="ranking-item">
-                            <span class="rank rank-3">3</span>
-                            <span class="name">Guangzhou Material</span>
-                            <span class="count">4 次</span>
-                        </li>
-                        <li class="ranking-item">
-                            <span class="rank rank-other">4</span>
-                            <span class="name">Dongguan Steel</span>
-                            <span class="count">3 次</span>
-                        </li>
-                        <li class="ranking-item">
-                            <span class="rank rank-other">5</span>
-                            <span class="name">Jiangsu Electric</span>
-                            <span class="count">2 次</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Charts Row 2 -->
-            <div class="charts-row-2">
-                <div class="chart-card">
-                    <h3>🔴 不良原因分布</h3>
-                    <div class="chart-container">
-                        <canvas id="incomingReasonChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>📊 各供应商不良率对比</h3>
-                    <div class="chart-container">
-                        <canvas id="incomingSupplierChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Data Table -->
-            <div class="table-card">
-                <div class="table-header">
-                    <h3>📋 来料品质明细</h3>
-                    <div class="table-filters">
-                        <input type="text" class="filter-input" placeholder="搜索供应商..." id="incomingSearch">
-                        <select class="filter-input" id="incomingStatusFilter">
-                            <option value="">全部状态</option>
-                            <option value="pending">待处理</option>
-                            <option value="processing">处理中</option>
-                            <option value="resolved">已关闭</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="table-scroll">
-                    <table class="data-table" id="incomingTable">
-                        <thead>
-                            <tr>
-                                <th>日期</th>
-                                <th>供应商</th>
-                                <th>产品</th>
-                                <th>型号</th>
-                                <th>不良原因</th>
-                                <th>数量</th>
-                                <th>不良率</th>
-                                <th>发票号</th>
-                                <th>状态</th>
-                                <th>对策</th>
-                            </tr>
-                        </thead>
-                        <tbody id="incomingTableBody">
-                        </tbody>
-                    </table>
-                </div>
+            <!-- Scroll Hint -->
+            <div class="scroll-hint" id="incomingHint" onclick="scrollToTable('incoming')">
+                <span class="scroll-hint-text">
+                    <span class="scroll-hint-arrow">↓</span>
+                    向下滑动查看数据明细
+                    <span class="scroll-hint-arrow">↓</span>
+                </span>
             </div>
         </div>
 
         <!-- 过程品质页面 -->
         <div class="page-content" id="page-process">
-            <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-card accent-blue">
-                    <div class="label">今日不良数</div>
-                    <div class="value">23</div>
-                    <div class="trend up">↑ 5 较昨日</div>
+            <div class="scroll-wrapper" id="processScroll">
+                <!-- Screen 1: Dashboard -->
+                <div class="screen" id="processDashboard">
+                    <!-- Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card accent-blue">
+                            <div class="label">今日不良数</div>
+                            <div class="value">23</div>
+                            <div class="trend up">↑ 5 较昨日</div>
+                        </div>
+                        <div class="stat-card accent-red">
+                            <div class="label">今日不良率</div>
+                            <div class="value">0.8%</div>
+                            <div class="trend up">↑ 0.2% 较昨日</div>
+                        </div>
+                        <div class="stat-card accent-yellow">
+                            <div class="label">本周不良数</div>
+                            <div class="value">89</div>
+                            <div class="trend down">↓ 12 较上周</div>
+                        </div>
+                        <div class="stat-card accent-purple">
+                            <div class="label">高频不良原因</div>
+                            <div class="value">混料</div>
+                            <div class="trend">占比 35%</div>
+                        </div>
+                        <div class="stat-card accent-orange">
+                            <div class="label">待处理问题</div>
+                            <div class="value">7</div>
+                            <div class="trend">需跟进</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts - Single Row -->
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>📈 过程不良趋势（近7天）</h3>
+                            <div class="chart-container">
+                                <canvas id="processTrendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>🔴 不良原因帕累托</h3>
+                            <div class="chart-container">
+                                <canvas id="processParetoChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>🏭 各产线不良对比</h3>
+                            <div class="chart-container">
+                                <canvas id="processLineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card accent-red">
-                    <div class="label">今日不良率</div>
-                    <div class="value">0.8%</div>
-                    <div class="trend up">↑ 0.2% 较昨日</div>
-                </div>
-                <div class="stat-card accent-yellow">
-                    <div class="label">本周不良数</div>
-                    <div class="value">89</div>
-                    <div class="trend down">↓ 12 较上周</div>
-                </div>
-                <div class="stat-card accent-purple">
-                    <div class="label">高频不良原因</div>
-                    <div class="value">混料</div>
-                    <div class="trend">占比 35%</div>
-                </div>
-                <div class="stat-card accent-orange">
-                    <div class="label">待处理问题</div>
-                    <div class="value">7</div>
-                    <div class="trend">需跟进</div>
+
+                <!-- Screen 2: Data Table -->
+                <div class="table-section">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h3>📋 过程品质明细</h3>
+                            <div class="table-filters">
+                                <input type="text" class="filter-input" placeholder="搜索产线/型号..." id="processSearch">
+                                <select class="filter-input" id="processStatusFilter">
+                                    <option value="">全部状态</option>
+                                    <option value="pending">待处理</option>
+                                    <option value="processing">处理中</option>
+                                    <option value="resolved">已关闭</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="data-table" id="processTable">
+                                <thead>
+                                    <tr>
+                                        <th>日期时间</th>
+                                        <th>产线</th>
+                                        <th>型号</th>
+                                        <th>零件号</th>
+                                        <th>不良原因</th>
+                                        <th>数量</th>
+                                        <th>不良率</th>
+                                        <th>QA要求</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="processTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Charts Row 1 -->
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h3>📈 过程不良趋势（近7天）</h3>
-                    <div class="chart-container">
-                        <canvas id="processTrendChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>🏭 各产线不良对比</h3>
-                    <div class="chart-container">
-                        <canvas id="processLineChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Row 2 -->
-            <div class="charts-row-2">
-                <div class="chart-card">
-                    <h3>🔴 不良原因帕累托图</h3>
-                    <div class="chart-container">
-                        <canvas id="processParetoChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>📊 不良时段分布</h3>
-                    <div class="chart-container">
-                        <canvas id="processTimeChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Data Table -->
-            <div class="table-card">
-                <div class="table-header">
-                    <h3>📋 过程品质明细</h3>
-                    <div class="table-filters">
-                        <input type="text" class="filter-input" placeholder="搜索产线/型号..." id="processSearch">
-                        <select class="filter-input" id="processStatusFilter">
-                            <option value="">全部状态</option>
-                            <option value="pending">待处理</option>
-                            <option value="processing">处理中</option>
-                            <option value="resolved">已关闭</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="table-scroll">
-                    <table class="data-table" id="processTable">
-                        <thead>
-                            <tr>
-                                <th>日期时间</th>
-                                <th>产线</th>
-                                <th>型号</th>
-                                <th>零件号</th>
-                                <th>不良原因</th>
-                                <th>数量</th>
-                                <th>不良率</th>
-                                <th>QA要求</th>
-                                <th>状态</th>
-                            </tr>
-                        </thead>
-                        <tbody id="processTableBody">
-                        </tbody>
-                    </table>
-                </div>
+            <!-- Scroll Hint -->
+            <div class="scroll-hint" id="processHint" onclick="scrollToTable('process')">
+                <span class="scroll-hint-text">
+                    <span class="scroll-hint-arrow">↓</span>
+                    向下滑动查看数据明细
+                    <span class="scroll-hint-arrow">↓</span>
+                </span>
             </div>
         </div>
     </div>
+
+    <!-- Back to top -->
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()"></div>
 
     <script>
         // Update datetime
@@ -714,8 +726,46 @@
                 document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
                 tab.classList.add('active');
                 document.getElementById('page-' + tab.dataset.tab).classList.add('active');
+                // Reset scroll position
+                document.getElementById(tab.dataset.tab + 'Scroll').scrollTop = 0;
+                updateHintVisibility();
             });
         });
+
+        // Scroll functions
+        function scrollToTable(type) {
+            const scrollWrapper = document.getElementById(type + 'Scroll');
+            const tableSection = scrollWrapper.querySelector('.table-section');
+            tableSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function scrollToTop() {
+            const activePage = document.querySelector('.page-content.active');
+            const scrollWrapper = activePage.querySelector('.scroll-wrapper');
+            scrollWrapper.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Update hint visibility based on scroll position
+        function updateHintVisibility() {
+            const activePage = document.querySelector('.page-content.active');
+            if (!activePage) return;
+            
+            const scrollWrapper = activePage.querySelector('.scroll-wrapper');
+            const hint = activePage.querySelector('.scroll-hint');
+            const backToTop = document.getElementById('backToTop');
+            
+            if (scrollWrapper.scrollTop > 100) {
+                hint.classList.add('hidden');
+                backToTop.classList.add('visible');
+            } else {
+                hint.classList.remove('hidden');
+                backToTop.classList.remove('visible');
+            }
+        }
+
+        // Add scroll listeners
+        document.getElementById('incomingScroll').addEventListener('scroll', updateHintVisibility);
+        document.getElementById('processScroll').addEventListener('scroll', updateHintVisibility);
 
         // Sample Data - 来料品质
         const incomingData = [
@@ -757,13 +807,13 @@
                     <td>${row.date}</td>
                     <td>${row.supplier}</td>
                     <td>${row.product}</td>
-                    <td>${row.model}</td>
+                    <td style="font-size:11px">${row.model}</td>
                     <td>${row.reason}</td>
                     <td>${row.qty.toLocaleString()} (${row.ngQty})</td>
                     <td class="${row.ngRate > 1.5 ? 'ng-rate-high' : row.ngRate > 0.8 ? 'ng-rate-medium' : 'ng-rate-low'}">${row.ngRate}%</td>
                     <td>${row.invoice}</td>
                     <td><span class="status-dot ${row.status}"></span>${row.status === 'pending' ? '待处理' : row.status === 'processing' ? '处理中' : '已关闭'}</td>
-                    <td style="max-width: 200px; font-size: 12px;">${row.countermeasure}</td>
+                    <td style="max-width: 180px; font-size: 11px;">${row.countermeasure}</td>
                 </tr>
             `).join('');
         }
@@ -773,14 +823,14 @@
             const tbody = document.getElementById('processTableBody');
             tbody.innerHTML = data.map(row => `
                 <tr>
-                    <td>${row.datetime}</td>
+                    <td style="white-space:nowrap">${row.datetime}</td>
                     <td><span class="badge badge-info">${row.line}</span></td>
-                    <td>${row.model}</td>
+                    <td style="font-size:11px">${row.model}</td>
                     <td>${row.partNo}</td>
                     <td>${row.reason}</td>
                     <td>${row.qty} (${row.ngQty})</td>
                     <td class="${row.ngRate > 1.0 ? 'ng-rate-high' : row.ngRate > 0.5 ? 'ng-rate-medium' : 'ng-rate-low'}">${row.ngRate}%</td>
-                    <td style="max-width: 180px; font-size: 12px;">${row.requirement}</td>
+                    <td style="max-width: 150px; font-size: 11px;">${row.requirement}</td>
                     <td><span class="status-dot ${row.status}"></span>${row.status === 'pending' ? '待处理' : row.status === 'processing' ? '处理中' : '已关闭'}</td>
                 </tr>
             `).join('');
@@ -826,13 +876,13 @@
         // Chart.js defaults
         Chart.defaults.color = '#888';
         Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+        Chart.defaults.font.size = 10;
 
         // Incoming Trend Chart
-        const incomingTrendCtx = document.getElementById('incomingTrendChart').getContext('2d');
-        new Chart(incomingTrendCtx, {
+        new Chart(document.getElementById('incomingTrendChart').getContext('2d'), {
             type: 'line',
             data: {
-                labels: ['08-01', '08-03', '08-05', '08-07', '08-09', '08-11', '08-13', '08-15', '08-17', '08-19', '08-21', '08-23', '08-25', '08-27'],
+                labels: ['01', '03', '05', '07', '09', '11', '13', '15', '17', '19', '21', '23', '25', '27'],
                 datasets: [{
                     label: '不良率 %',
                     data: [1.2, 1.8, 1.5, 2.1, 1.9, 2.5, 2.2, 1.8, 2.0, 1.6, 1.4, 1.7, 2.3, 2.8],
@@ -840,98 +890,50 @@
                     backgroundColor: 'rgba(0, 212, 255, 0.1)',
                     fill: true,
                     tension: 0.4,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#00d4ff'
+                    pointRadius: 3,
+                    pointBackgroundColor: '#00d4ff',
+                    borderWidth: 2
                 }, {
-                    label: '目标线',
+                    label: '目标',
                     data: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
                     borderColor: '#f87171',
-                    borderDash: [5, 5],
+                    borderDash: [4, 4],
                     pointRadius: 0,
-                    fill: false
+                    borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' }
-                },
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, padding: 5 } } },
                 scales: {
-                    y: { 
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    },
-                    x: {
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    }
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { stepSize: 1 } },
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' } }
                 }
             }
         });
 
         // Incoming Reason Chart (Pie)
-        const incomingReasonCtx = document.getElementById('incomingReasonChart').getContext('2d');
-        new Chart(incomingReasonCtx, {
+        new Chart(document.getElementById('incomingReasonChart').getContext('2d'), {
             type: 'doughnut',
             data: {
-                labels: ['通止规NG', '外观不良', '尺寸超差', '材质问题', '绝缘不良', '其他'],
+                labels: ['通止规NG', '外观', '尺寸', '材质', '绝缘', '其他'],
                 datasets: [{
                     data: [25, 20, 18, 15, 12, 10],
-                    backgroundColor: [
-                        '#f87171', '#fbbf24', '#00d4ff', '#a78bfa', '#4ade80', '#6b7280'
-                    ],
+                    backgroundColor: ['#f87171', '#fbbf24', '#00d4ff', '#a78bfa', '#4ade80', '#6b7280'],
                     borderWidth: 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'right' }
-                }
-            }
-        });
-
-        // Incoming Supplier Chart (Bar)
-        const incomingSupplierCtx = document.getElementById('incomingSupplierChart').getContext('2d');
-        new Chart(incomingSupplierCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Anhui Meizhi', 'Shenzhen Parts', 'Guangzhou Mat.', 'Dongguan Steel', 'Jiangsu Elec.'],
-                datasets: [{
-                    label: '不良率 %',
-                    data: [2.5, 1.8, 1.6, 1.2, 0.9],
-                    backgroundColor: [
-                        'rgba(248, 113, 113, 0.8)',
-                        'rgba(251, 191, 36, 0.8)',
-                        'rgba(0, 212, 255, 0.8)',
-                        'rgba(167, 139, 250, 0.8)',
-                        'rgba(74, 222, 128, 0.8)'
-                    ],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
+                plugins: { legend: { position: 'right', labels: { boxWidth: 8, padding: 3, font: { size: 9 } } } },
+                cutout: '60%'
             }
         });
 
         // Process Trend Chart
-        const processTrendCtx = document.getElementById('processTrendChart').getContext('2d');
-        new Chart(processTrendCtx, {
+        new Chart(document.getElementById('processTrendChart').getContext('2d'), {
             type: 'line',
             data: {
                 labels: ['08-21', '08-22', '08-23', '08-24', '08-25', '08-26', '08-27'],
@@ -942,47 +944,70 @@
                     backgroundColor: 'rgba(248, 113, 113, 0.1)',
                     fill: true,
                     tension: 0.4,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#f87171'
+                    pointRadius: 4,
+                    pointBackgroundColor: '#f87171',
+                    borderWidth: 2
                 }, {
                     label: '不良率 %',
                     data: [0.4, 0.6, 0.5, 0.7, 0.5, 0.6, 0.8],
                     borderColor: '#fbbf24',
-                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                    fill: false,
+                    backgroundColor: 'transparent',
                     tension: 0.4,
-                    pointRadius: 5,
+                    pointRadius: 4,
                     pointBackgroundColor: '#fbbf24',
+                    borderWidth: 2,
                     yAxisID: 'y1'
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' }
-                },
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, padding: 5 } } },
                 scales: {
-                    y: { 
-                        beginAtZero: true,
-                        position: 'left',
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    },
-                    y1: {
-                        beginAtZero: true,
-                        position: 'right',
-                        grid: { display: false }
-                    },
-                    x: {
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    }
+                    y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y1: { beginAtZero: true, position: 'right', grid: { display: false } },
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+
+        // Process Pareto Chart
+        new Chart(document.getElementById('processParetoChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['混料', '外观', '装配', '尺寸', '电气', '其他'],
+                datasets: [{
+                    label: '不良数',
+                    data: [31, 22, 18, 15, 12, 8],
+                    backgroundColor: 'rgba(248, 113, 113, 0.8)',
+                    borderRadius: 4,
+                    barPercentage: 0.7
+                }, {
+                    label: '累计%',
+                    data: [29.2, 49.9, 66.8, 80.9, 92.2, 100],
+                    type: 'line',
+                    borderColor: '#00d4ff',
+                    backgroundColor: 'transparent',
+                    pointRadius: 3,
+                    pointBackgroundColor: '#00d4ff',
+                    borderWidth: 2,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, padding: 5 } } },
+                scales: {
+                    y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y1: { beginAtZero: true, max: 100, position: 'right', grid: { display: false }, ticks: { callback: v => v + '%', font: { size: 9 } } },
+                    x: { grid: { display: false } }
                 }
             }
         });
 
         // Process Line Chart (Bar)
-        const processLineCtx = document.getElementById('processLineChart').getContext('2d');
-        new Chart(processLineCtx, {
+        new Chart(document.getElementById('processLineChart').getContext('2d'), {
             type: 'bar',
             data: {
                 labels: ['A Line', 'B Line', 'C Line', 'D Line'],
@@ -990,121 +1015,25 @@
                     label: '不良数',
                     data: [18, 25, 22, 14],
                     backgroundColor: 'rgba(0, 212, 255, 0.8)',
-                    borderRadius: 6
+                    borderRadius: 4,
+                    barPercentage: 0.6
                 }, {
                     label: '不良率 %',
                     data: [0.7, 0.9, 0.8, 0.5],
                     backgroundColor: 'rgba(167, 139, 250, 0.8)',
-                    borderRadius: 6,
+                    borderRadius: 4,
+                    barPercentage: 0.6,
                     yAxisID: 'y1'
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' }
-                },
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, padding: 5 } } },
                 scales: {
-                    y: { 
-                        beginAtZero: true,
-                        position: 'left',
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    },
-                    y1: {
-                        beginAtZero: true,
-                        position: 'right',
-                        grid: { display: false }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-
-        // Process Pareto Chart
-        const processParetoCtx = document.getElementById('processParetoChart').getContext('2d');
-        new Chart(processParetoCtx, {
-            type: 'bar',
-            data: {
-                labels: ['混料', '外观不良', '装配不良', '尺寸偏差', '电气不良', '其他'],
-                datasets: [{
-                    label: '不良数',
-                    data: [31, 22, 18, 15, 12, 8],
-                    backgroundColor: 'rgba(248, 113, 113, 0.8)',
-                    borderRadius: 6,
-                    yAxisID: 'y'
-                }, {
-                    label: '累计百分比 %',
-                    data: [29.2, 49.9, 66.8, 80.9, 92.2, 100],
-                    type: 'line',
-                    borderColor: '#00d4ff',
-                    backgroundColor: 'transparent',
-                    pointRadius: 4,
-                    pointBackgroundColor: '#00d4ff',
-                    yAxisID: 'y1'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        position: 'left',
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    },
-                    y1: {
-                        beginAtZero: true,
-                        max: 100,
-                        position: 'right',
-                        grid: { display: false },
-                        ticks: { callback: v => v + '%' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-
-        // Process Time Chart
-        const processTimeCtx = document.getElementById('processTimeChart').getContext('2d');
-        new Chart(processTimeCtx, {
-            type: 'bar',
-            data: {
-                labels: ['08:00-10:00', '10:00-12:00', '13:00-15:00', '15:00-17:00', '17:00-19:00'],
-                datasets: [{
-                    label: '不良数',
-                    data: [12, 18, 25, 22, 12],
-                    backgroundColor: [
-                        'rgba(74, 222, 128, 0.8)',
-                        'rgba(0, 212, 255, 0.8)',
-                        'rgba(251, 191, 36, 0.8)',
-                        'rgba(248, 113, 113, 0.8)',
-                        'rgba(167, 139, 250, 0.8)'
-                    ],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
+                    y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y1: { beginAtZero: true, position: 'right', grid: { display: false } },
+                    x: { grid: { display: false } }
                 }
             }
         });
